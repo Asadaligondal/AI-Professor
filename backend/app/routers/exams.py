@@ -93,20 +93,34 @@ async def update_submission(
             detail=f"Submission with ID {submission_id} not found"
         )
     
-    # Update fields if provided
-    if update_data.total_score is not None:
-        submission.total_score = update_data.total_score
-    
-    if update_data.ai_feedback is not None:
-        submission.ai_feedback = update_data.ai_feedback
-    
+    # Update grade_json if provided (contains question-level marks)
     if update_data.grade_json is not None:
         submission.grade_json = update_data.grade_json
+        
+        # Recalculate total_score from grade_json
+        if isinstance(update_data.grade_json, dict) and "questions" in update_data.grade_json:
+            total = 0.0
+            for question in update_data.grade_json["questions"]:
+                if "marks_obtained" in question:
+                    try:
+                        total += float(question["marks_obtained"])
+                    except (ValueError, TypeError):
+                        pass
+            submission.total_score = total
+            logger.info(f"Recalculated total_score: {total} for submission {submission_id}")
+    
+    # Allow direct total_score update if grade_json not provided
+    elif update_data.total_score is not None:
+        submission.total_score = update_data.total_score
+    
+    # Update feedback
+    if update_data.ai_feedback is not None:
+        submission.ai_feedback = update_data.ai_feedback
     
     db.commit()
     db.refresh(submission)
     
-    logger.info(f"Updated submission {submission_id} for student {submission.student_name}")
+    logger.info(f"Updated submission {submission_id} for student {submission.student_name}, total_score: {submission.total_score}")
     
     return submission
 

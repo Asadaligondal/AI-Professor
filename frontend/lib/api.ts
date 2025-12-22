@@ -63,3 +63,23 @@ export const gradingService = {
     return response.data;
   },
 };
+
+export interface DashboardStats {
+  total_exams: number;
+  total_submissions: number;
+  average_grade: number;
+  total_students: number;
+}
+
+export const dashboardService = {
+  // Get dashboard statistics
+  getStats: async (userId: string) => {
+    const response = await apiClient.get<DashboardStats>(
+      "/api/v1/dashboard/stats",
+      {
+        params: { user_id: userId }
+      }
+    );
+    return response.data;
+  },
+};

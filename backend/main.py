@@ -13,6 +13,7 @@ from app.routers import grading_router
 from app.routers.exams import router as exams_router
 from app.routers.payments import router as payments_router
 from app.routers.websocket import router as websocket_router
+from app.routers.dashboard import router as dashboard_router
 
 load_dotenv()
 
@@ -61,6 +62,7 @@ app.include_router(grading_router)
 app.include_router(exams_router)
 app.include_router(payments_router)
 app.include_router(websocket_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/")

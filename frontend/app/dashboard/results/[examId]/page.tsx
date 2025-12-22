@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ interface ResultsPageProps {
 export default function ResultsPage({ params }: ResultsPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useUser();
   const { examId: examIdStr } = use(params);
   const examId = parseInt(examIdStr);
   
@@ -47,7 +49,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     }
   }, [fetchedSubmissions]);
 
-  // Save mutation
+  // Save mutation for batch updates
   const saveMutation = useMutation({
     mutationFn: async () => {
       // Update all submissions
@@ -63,10 +65,37 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     onSuccess: () => {
       toast.success("All changes saved successfully!");
       setHasChanges(false);
+      // Invalidate submissions query
       queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+      // Invalidate dashboard stats to update average grade in real-time
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats", user.id] });
+        toast.success("Dashboard stats updated!", { duration: 2000 });
+      }
     },
     onError: () => {
       toast.error("Failed to save changes. Please try again.");
+    },
+  });
+
+  // Individual submission update mutation for auto-save
+  const updateSingleSubmissionMutation = useMutation({
+    mutationFn: async (submission: Submission) => {
+      return examService.updateSubmission(submission.id, {
+        total_score: submission.total_score,
+        ai_feedback: submission.ai_feedback,
+        grade_json: submission.grade_json,
+      });
+    },
+    onSuccess: () => {
+      // Invalidate queries silently in background
+      queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats", user.id] });
+      }
+    },
+    onError: () => {
+      toast.error("Failed to auto-save changes.");
     },
   });
 
@@ -84,14 +113,14 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     setHasChanges(true);
   };
 
-  // Update question marks and recalculate total
+  // Update question marks and recalculate total with auto-save
   const updateQuestionMarks = (
     submissionId: number,
     questionIndex: number,
     newMarks: number
   ) => {
-    setSubmissions((prev) =>
-      prev.map((sub) => {
+    setSubmissions((prev) => {
+      const updated = prev.map((sub) => {
         if (sub.id === submissionId && sub.grade_json) {
           const updatedJson = { ...sub.grade_json };
           if (updatedJson.results && updatedJson.results[questionIndex]) {
@@ -103,16 +132,22 @@ export default function ResultsPage({ params }: ResultsPageProps) {
               0
             );
             
-            return {
+            const updatedSub = {
               ...sub,
               grade_json: updatedJson,
               total_score: newTotal,
             };
+            
+            // Auto-save this submission after update
+            updateSingleSubmissionMutation.mutate(updatedSub);
+            
+            return updatedSub;
           }
         }
         return sub;
-      })
-    );
+      });
+      return updated;
+    });
     setHasChanges(true);
   };
 

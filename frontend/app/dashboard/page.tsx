@@ -2,13 +2,25 @@
 
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, FileText, GraduationCap, TrendingUp, Crown } from "lucide-react";
+import { PlusCircle, FileText, GraduationCap, TrendingUp, Crown, Loader2 } from "lucide-react";
+import { dashboardService } from "@/lib/api";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+
+  // Fetch dashboard stats from backend
+  const { data: stats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ["dashboard-stats", user?.id],
+    queryFn: () => dashboardService.getStats(user!.id),
+    enabled: !!user,
+    refetchOnMount: "always", // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data stale immediately
+  });
 
   if (!isLoaded) {
     return (
@@ -71,10 +83,16 @@ export default function DashboardPage() {
               <FileText className="h-4 w-4 text-zinc-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                No exams created yet
-              </p>
+              {isLoadingStats ? (
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats?.total_exams || 0}</div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    {stats?.total_exams === 0 ? "No exams created yet" : "Exams created"}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -86,10 +104,18 @@ export default function DashboardPage() {
               <GraduationCap className="h-4 w-4 text-zinc-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Start grading to see stats
-              </p>
+              {isLoadingStats ? (
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats?.total_submissions || 0}</div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    {stats?.total_submissions === 0 
+                      ? "Start grading to see stats" 
+                      : `From ${stats?.total_students || 0} students`}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -101,10 +127,18 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-zinc-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                No data available
-              </p>
+              {isLoadingStats ? (
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {stats?.average_grade ? `${stats.average_grade.toFixed(1)}%` : "--"}
+                  </div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    {stats?.average_grade ? "Across all submissions" : "No data available"}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
