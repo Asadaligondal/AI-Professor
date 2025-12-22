@@ -1,0 +1,25 @@
+{
+  "name": "ai-saas-monorepo",
+  "version": "1.0.0",
+  "description": "Full-stack AI SaaS monorepo with Next.js and FastAPI",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && uvicorn main:app --reload",
+    "docker:up": "docker-compose up",
+    "docker:build": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && pip install -r requirements.txt"
+  },
+  "keywords": [
+    "nextjs",
+    "fastapi",
+    "ai",
+    "saas",
+    "typescript",
+    "python"
+  ],
+  "author": "",
+  "license": "MIT"
+}
