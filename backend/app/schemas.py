@@ -76,8 +76,8 @@ class UserUpdate(BaseModel):
     """Schema for updating user information"""
     full_name: Optional[str] = None
     subscription_status: Optional[SubscriptionStatus] = None
-    stripe_customer_id: Optional[str] = None
-    stripe_subscription_id: Optional[str] = None
+    credits: Optional[int] = None
+    safepay_customer_id: Optional[str] = None
 
 
 class UserResponse(UserBase):
@@ -87,8 +87,8 @@ class UserResponse(UserBase):
     id: int
     clerk_id: str
     subscription_status: SubscriptionStatus
-    stripe_customer_id: Optional[str] = None
-    stripe_subscription_id: Optional[str] = None
+    credits: int
+    safepay_customer_id: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None

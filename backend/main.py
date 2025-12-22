@@ -11,6 +11,8 @@ from app import models  # This registers all models with Base
 # Import routers
 from app.routers import grading_router
 from app.routers.exams import router as exams_router
+from app.routers.payments import router as payments_router
+from app.routers.websocket import router as websocket_router
 
 load_dotenv()
 
@@ -57,6 +59,8 @@ app.add_middleware(
 # Include routers
 app.include_router(grading_router)
 app.include_router(exams_router)
+app.include_router(payments_router)
+app.include_router(websocket_router)
 
 
 @app.get("/")

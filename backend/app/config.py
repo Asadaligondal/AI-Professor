@@ -13,8 +13,28 @@ class Settings(BaseSettings):
     # API Keys
     openai_api_key: str = ""
     clerk_secret_key: str = ""
-    stripe_secret_key: str = ""
-    stripe_webhook_secret: str = ""
+    
+    # Payment Gateways - Safepay
+    safepay_api_key: str = ""
+    safepay_secret_key: str = ""
+    safepay_environment: str = "sandbox"
+    safepay_webhook_secret: str = ""
+    
+    # Payment Gateways - JazzCash
+    jazzcash_merchant_id: str = ""
+    jazzcash_password: str = ""
+    jazzcash_hash_key: str = ""
+    jazzcash_return_url: str = "http://localhost:3000/payment/success"
+    jazzcash_environment: str = "sandbox"
+    
+    # Payment Gateways - Easypaisa
+    easypaisa_store_id: str = ""
+    easypaisa_hash_key: str = ""
+    easypaisa_return_url: str = "http://localhost:3000/payment/success"
+    easypaisa_environment: str = "sandbox"
+    
+    # URLs
+    frontend_url: str = "http://localhost:3000"
     
     # CORS
     cors_origins: str = "http://localhost:3000"

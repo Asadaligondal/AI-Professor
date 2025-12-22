@@ -4,7 +4,7 @@ import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, FileText, GraduationCap, TrendingUp } from "lucide-react";
+import { PlusCircle, FileText, GraduationCap, TrendingUp, Crown } from "lucide-react";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -35,6 +35,14 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/pricing")}
+              className="hidden md:flex"
+            >
+              <Crown className="mr-2 h-4 w-4" />
+              Upgrade to Pro
+            </Button>
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
               Welcome, {user?.firstName || "User"}
             </span>

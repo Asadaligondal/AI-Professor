@@ -28,13 +28,18 @@ class User(Base):
     clerk_id = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String, nullable=True)
+    
+    # Subscription & Credits
     subscription_status = Column(
         SQLEnum(SubscriptionStatus), 
         default=SubscriptionStatus.FREE,
         nullable=False
     )
-    stripe_customer_id = Column(String, unique=True, nullable=True)
-    stripe_subscription_id = Column(String, unique=True, nullable=True)
+    credits = Column(Integer, default=0, nullable=False)
+    
+    # Payment Gateway IDs
+    safepay_customer_id = Column(String, unique=True, nullable=True)
+    
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
