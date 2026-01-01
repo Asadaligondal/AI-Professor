@@ -13,6 +13,7 @@ from typing import List
 from app.database import get_db
 from app import models, schemas
 from app.config import get_settings
+from app.dependencies import check_credits
 from services.ai_grader import AIGradingService, GradingError, StudentGradeResult
 
 
@@ -68,10 +69,6 @@ async def grade_exam(
         default="Untitled Exam",
         description="Title of the exam being graded"
     ),
-    user_id: str = Form(
-        ...,
-        description="Clerk user ID of the professor"
-    ),
     marks_per_question: float = Form(
         default=1.0,
         ge=0.5,
@@ -89,6 +86,7 @@ async def grade_exam(
         le=1.0,
         description="API temperature (lower = more consistent)"
     ),
+    user: models.User = Depends(check_credits),  # Credit guard applied here
     db: Session = Depends(get_db),
     grading_service: AIGradingService = Depends(get_ai_grading_service)
 ):
@@ -128,17 +126,8 @@ async def grade_exam(
                 detail="Student papers must be a PDF file"
             )
         
-        # Get or create user
-        user = db.query(models.User).filter(models.User.clerk_id == user_id).first()
-        if not user:
-            # Create user if doesn't exist
-            user = models.User(
-                clerk_id=user_id,
-                email=f"{user_id}@temp.com",  # Placeholder, should be updated from Clerk
-                subscription_status=models.SubscriptionStatus.FREE
-            )
-            db.add(user)
-            db.flush()  # Get user.id without committing
+        # User is already fetched and validated by check_credits dependency
+        # No need to query again
         
         # Create exam
         exam = models.Exam(
@@ -150,7 +139,8 @@ async def grade_exam(
         db.add(exam)
         db.flush()  # Get exam.id without committing
         
-        logger.info(f"Created exam {exam.id}: {exam.title} for user {user_id}")
+        logger.info(f"Created exam {exam.id}: {exam.title} for user {user.clerk_id}")
+        logger.info(f"User {user.clerk_id} has {user.credits} credits before grading")
         
         # Read PDF files
         professor_key_bytes = await professor_key.read()
@@ -236,9 +226,14 @@ async def grade_exam(
         if total_questions > 0:
             exam.total_marks = marks_per_question * total_questions
         
+        # Deduct 1 credit from user after successful grading
+        user.credits -= 1
+        logger.info(f"Deducted 1 credit from user {user.clerk_id}. Remaining credits: {user.credits}")
+        
         # Commit all changes
         db.commit()
         db.refresh(exam)
+        db.refresh(user)
         
         processing_time = time.time() - start_time
         

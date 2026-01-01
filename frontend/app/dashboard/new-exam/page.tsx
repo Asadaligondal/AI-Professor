@@ -26,7 +26,10 @@ export default function NewExamPage() {
 
   const gradingMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      return gradingService.gradeExam(formData, setUploadProgress);
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
+      return gradingService.gradeExam(formData, user.id, setUploadProgress);
     },
     onSuccess: (data) => {
       toast.success(
@@ -40,9 +43,15 @@ export default function NewExamPage() {
       }
     },
     onError: (error: any) => {
-      toast.error(
-        error.response?.data?.detail || "Failed to grade exam. Please try again."
-      );
+      const errorMessage = error.response?.data?.detail || "Failed to grade exam. Please try again.";
+      toast.error(errorMessage);
+      
+      // If insufficient credits, redirect to pricing page
+      if (error.response?.status === 403 && errorMessage.includes("Insufficient credits")) {
+        setTimeout(() => {
+          router.push("/pricing");
+        }, 2000);
+      }
     },
   });
 
@@ -68,7 +77,6 @@ export default function NewExamPage() {
     formData.append("professor_key", professorKey);
     formData.append("student_papers", studentPapers);
     formData.append("exam_title", examTitle);
-    formData.append("user_id", user.id);
     formData.append("marks_per_question", marksPerQuestion);
 
     gradingMutation.mutate(formData);

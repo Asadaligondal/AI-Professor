@@ -270,12 +270,10 @@ export interface QuestionGrade {
 }
 
 export interface GradeResult {
-  submission_id: number;
-  total_marks_obtained: number;
-  total_marks: number;
-  percentage: number;
-  grade: GradeLevel;
-  question_grades: QuestionGrade[];
-  overall_feedback?: string;
-  graded_at: string;
+  success: boolean;
+  message: string;
+  students_graded: number;
+  results: any[];  // StudentGradeSchema array
+  processing_time?: number;
+  exam_id?: number;
 }

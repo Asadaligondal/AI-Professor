@@ -42,13 +42,18 @@ export const examService = {
 
 export const gradingService = {
   // Grade exam papers
-  gradeExam: async (formData: FormData, onProgress?: (progress: number) => void) => {
+  gradeExam: async (
+    formData: FormData, 
+    userId: string,
+    onProgress?: (progress: number) => void
+  ) => {
     const response = await apiClient.post<GradeResult>(
       "/api/v1/grade",
       formData,
       {
         headers: {
           "Content-Type": "multipart/form-data",
+          "X-Clerk-User-Id": userId,
         },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
@@ -69,6 +74,8 @@ export interface DashboardStats {
   total_submissions: number;
   average_grade: number;
   total_students: number;
+  credits: number;
+  subscription_status: string;
 }
 
 export const dashboardService = {

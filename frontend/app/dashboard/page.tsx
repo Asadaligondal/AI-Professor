@@ -47,6 +47,16 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {stats && (
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Credits:
+                </span>
+                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
+                  {stats.credits}
+                </span>
+              </div>
+            )}
             <Button
               variant="outline"
               onClick={() => router.push("/pricing")}

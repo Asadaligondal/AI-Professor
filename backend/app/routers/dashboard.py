@@ -36,7 +36,9 @@ async def get_dashboard_stats(
             "total_exams": 0,
             "total_submissions": 0,
             "average_grade": 0.0,
-            "total_students": 0
+            "total_students": 0,
+            "credits": 0,
+            "subscription_status": "free"
         }
     
     # Count total exams for this user
@@ -55,7 +57,9 @@ async def get_dashboard_stats(
             "total_exams": 0,
             "total_submissions": 0,
             "average_grade": 0.0,
-            "total_students": 0
+            "total_students": 0,
+            "credits": user.credits,
+            "subscription_status": user.subscription_status.value
         }
     
     # Count total submissions for user's exams
@@ -98,5 +102,7 @@ async def get_dashboard_stats(
         "total_exams": total_exams,
         "total_submissions": total_submissions,
         "average_grade": round(average_grade, 2),
-        "total_students": total_students
+        "total_students": total_students,
+        "credits": user.credits,
+        "subscription_status": user.subscription_status.value
     }
