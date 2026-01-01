@@ -13,6 +13,7 @@ import { examService } from "@/lib/api";
 import { Submission } from "@/types";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { QuestionDetailView } from "@/components/question-detail-view";
 
 interface ResultsPageProps {
   params: Promise<{
@@ -305,62 +306,87 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {questions.map((question: any, qIdx: number) => (
-                        <div
-                          key={qIdx}
-                          className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 space-y-3"
-                        >
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-50">
-                              Question {qIdx + 1}
-                            </h4>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-zinc-500">Marks:</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                max={question.max_marks || 100}
-                                step="0.5"
-                                value={question.marks_obtained || 0}
-                                onChange={(e) =>
-                                  updateQuestionMarks(
-                                    submission.id,
-                                    qIdx,
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                className="w-20 text-center"
+                      {questions.map((question: any, qIdx: number) => {
+                        // Check if this question has the new explainable reasoning structure
+                        const hasRationale = question.rationale || 
+                          (question.processed_answer && question.expected_answer);
+                        
+                        console.log('Question', qIdx, 'hasRationale:', hasRationale, 'data:', {
+                          hasRationaleField: !!question.rationale,
+                          hasProcessed: !!question.processed_answer,
+                          hasExpected: !!question.expected_answer
+                        });
+
+                        if (hasRationale) {
+                          // Render the detailed explainable reasoning view
+                          return (
+                            <div key={qIdx} className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+                              <QuestionDetailView 
+                                question={question} 
+                                questionIndex={qIdx}
                               />
-                              <span className="text-sm text-zinc-500">
-                                / {question.max_marks || 0}
-                              </span>
+                            </div>
+                          );
+                        }
+
+                        // Fallback to the old simple view for questions without rationale
+                        return (
+                          <div
+                            key={qIdx}
+                            className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-zinc-900 dark:text-zinc-50">
+                                Question {qIdx + 1}
+                              </h4>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-zinc-500">Marks:</span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={question.max_marks || 100}
+                                  step="0.5"
+                                  value={question.marks_obtained || 0}
+                                  onChange={(e) =>
+                                    updateQuestionMarks(
+                                      submission.id,
+                                      qIdx,
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-20 text-center"
+                                />
+                                <span className="text-sm text-zinc-500">
+                                  / {question.max_marks || 0}
+                                </span>
+                              </div>
+                            </div>
+
+                            {question.student_answer && (
+                              <div className="text-sm">
+                                <p className="text-zinc-500 mb-1">Student Answer:</p>
+                                <p className="text-zinc-700 dark:text-zinc-300">
+                                  {question.student_answer}
+                                </p>
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="text-sm text-zinc-500 mb-1 block">
+                                Feedback:
+                              </label>
+                              <Textarea
+                                value={question.feedback || ""}
+                                onChange={(e) =>
+                                  updateFeedback(submission.id, qIdx, e.target.value)
+                                }
+                                placeholder="Add feedback for this question..."
+                                rows={2}
+                              />
                             </div>
                           </div>
-
-                          {question.student_answer && (
-                            <div className="text-sm">
-                              <p className="text-zinc-500 mb-1">Student Answer:</p>
-                              <p className="text-zinc-700 dark:text-zinc-300">
-                                {question.student_answer}
-                              </p>
-                            </div>
-                          )}
-
-                          <div>
-                            <label className="text-sm text-zinc-500 mb-1 block">
-                              Feedback:
-                            </label>
-                            <Textarea
-                              value={question.feedback || ""}
-                              onChange={(e) =>
-                                updateFeedback(submission.id, qIdx, e.target.value)
-                              }
-                              placeholder="Add feedback for this question..."
-                              rows={2}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>

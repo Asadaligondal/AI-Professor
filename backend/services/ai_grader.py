@@ -12,20 +12,31 @@ from typing import List, Dict, Any, Optional, Tuple
 from PIL import Image
 import fitz  # PyMuPDF
 from openai import OpenAI, OpenAIError
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 
+class Rationale(BaseModel):
+    """Detailed rationale for grading decision"""
+    points_awarded: List[str] = Field(default_factory=list)
+    points_deducted: List[str] = Field(default_factory=list)
+    improvement_tip: str = ""
+
+
 class QuestionGrade(BaseModel):
     """Individual question grade result"""
     q_num: str
     student_answer: str
+    processed_answer: Optional[str] = None
+    expected_answer: Optional[str] = None
     marks_obtained: float
     max_marks: float
     feedback: str
+    rationale: Optional[Rationale] = None
+    concept_alignment: Optional[str] = None
 
 
 class StudentGradeResult(BaseModel):
@@ -222,14 +233,14 @@ class AIGradingService:
     def _get_system_instruction() -> str:
         """Get the system instruction for AI grading."""
         return (
-            "You are an automated Exam Scanner and Grader. You will receive a PDF (as a sequence of images) "
-            "containing exams from MULTIPLE students.\n\n"
+            "You are a meticulous automated Exam Scanner and Grader with explainable reasoning capabilities. "
+            "You will receive a PDF (as a sequence of images) containing exams from MULTIPLE students.\n\n"
             "Task:\n"
             "1. Scan all pages to identify where one student's exam ends and another begins.\n"
             "2. For EACH student found, extract: Name, Roll No, and their answers.\n"
             "3. Grade each student individually against the provided Professor's Answer Key (Image Set A).\n"
-            "4. If the student follows the same logic as the professor's key, award full marks.\n"
-            "5. If handwriting is unclear but the approach seems correct, award partial marks and note in feedback.\n"
+            "4. For every mark awarded or deducted, you MUST cross-reference the Professor's Answer Key and specify exactly where the student's logic diverged.\n"
+            "5. Provide structured justifications with specific points awarded and deducted.\n"
             "6. Be fair and consistent in grading across all students.\n\n"
             "Output Format: Return a JSON array (list) of objects. Each object represents one student.\n"
             "Example structure:\n"
@@ -240,20 +251,30 @@ class AIGradingService:
             '    "results": [\n'
             '      {\n'
             '        "q_num": "1",\n'
-            '        "student_answer": "The answer is...",\n'
-            '        "marks_obtained": 5.0,\n'
+            '        "student_answer": "Raw OCR text of student answer",\n'
+            '        "processed_answer": "AI-interpreted version of the answer",\n'
+            '        "expected_answer": "Expected answer from professor key",\n'
+            '        "marks_obtained": 4.0,\n'
             '        "max_marks": 5.0,\n'
-            '        "feedback": "Correct approach and solution"\n'
+            '        "feedback": "Overall feedback summary",\n'
+            '        "rationale": {\n'
+            '          "points_awarded": ["Step 1 correct", "Concept A identified correctly", "Formula applied properly"],\n'
+            '          "points_deducted": ["Calculation error in step 3", "Missing units in final answer"],\n'
+            '          "improvement_tip": "Focus on unit conversion for final answers and double-check calculations."\n'
+            '        },\n'
+            '        "concept_alignment": "85%"\n'
             '      }\n'
             '    ],\n'
-            '    "total_score": 50.0\n'
+            '    "total_score": 48.0\n'
             '  }\n'
             ']\n\n'
             "CRITICAL RULES:\n"
             "- ALWAYS return a JSON array, even if there's only one student: [single_student]\n"
             "- Ensure all numeric values (marks_obtained, max_marks, total_score) are numbers, not strings\n"
-            "- Be thorough in feedback, especially when deducting marks\n"
-            "- If handwriting is illegible, mention it in feedback and deduct marks accordingly"
+            "- Be thorough in feedback, especially when deducting marks - cite specific discrepancies from the key\n"
+            "- For each question, provide detailed rationale with points_awarded and points_deducted arrays\n"
+            "- Calculate concept_alignment as a percentage showing how well the student's answer matches key concepts\n"
+            "- If handwriting is illegible, mention it in rationale and deduct marks accordingly"
         )
     
     @staticmethod
@@ -402,12 +423,26 @@ Remember: Return [{{student1}}, {{student2}}, ...] format, NOT just {{student1}}
                 # Convert results to QuestionGrade objects
                 question_grades = []
                 for result in student_data.get("results", []):
+                    # Parse rationale if present
+                    rationale = None
+                    if "rationale" in result:
+                        rationale_data = result["rationale"]
+                        rationale = Rationale(
+                            points_awarded=rationale_data.get("points_awarded", []),
+                            points_deducted=rationale_data.get("points_deducted", []),
+                            improvement_tip=rationale_data.get("improvement_tip", "")
+                        )
+                    
                     question_grades.append(QuestionGrade(
                         q_num=str(result.get("q_num", "?")),
                         student_answer=result.get("student_answer", "N/A"),
+                        processed_answer=result.get("processed_answer"),
+                        expected_answer=result.get("expected_answer"),
                         marks_obtained=float(result.get("marks_obtained", 0)),
                         max_marks=float(result.get("max_marks", 0)),
-                        feedback=result.get("feedback", "")
+                        feedback=result.get("feedback", ""),
+                        rationale=rationale,
+                        concept_alignment=result.get("concept_alignment")
                     ))
                 
                 # Create StudentGradeResult

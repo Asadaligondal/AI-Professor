@@ -13,13 +13,24 @@ from app.models import SubscriptionStatus, GradeStatus
 # AI Grading Schemas
 # ============================================================================
 
+class RationaleSchema(BaseModel):
+    """Schema for grading rationale"""
+    points_awarded: List[str] = Field(default_factory=list, description="List of points where student was correct")
+    points_deducted: List[str] = Field(default_factory=list, description="List of points where marks were deducted")
+    improvement_tip: str = Field(default="", description="Personalized tip for improvement")
+
+
 class QuestionGradeSchema(BaseModel):
     """Schema for individual question grade"""
     q_num: str = Field(..., description="Question number")
-    student_answer: str = Field(..., description="Student's answer text")
+    student_answer: str = Field(..., description="Student's answer text (raw OCR)")
+    processed_answer: str = Field(default="", description="AI-processed/interpreted answer")
+    expected_answer: str = Field(default="", description="Expected answer from professor's key")
     marks_obtained: float = Field(..., ge=0, description="Marks obtained by student")
     max_marks: float = Field(..., ge=0, description="Maximum marks for question")
-    feedback: str = Field(..., description="Feedback for this question")
+    feedback: str = Field(..., description="Overall feedback for this question")
+    rationale: RationaleSchema = Field(default_factory=RationaleSchema, description="Detailed reasoning")
+    concept_alignment: str = Field(default="N/A", description="Percentage alignment with key concepts")
 
 
 class StudentGradeSchema(BaseModel):

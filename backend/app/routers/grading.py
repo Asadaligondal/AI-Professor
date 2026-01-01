@@ -203,9 +203,17 @@ async def grade_exam(
                     {
                         "q_num": q.q_num,
                         "student_answer": q.student_answer,
+                        "processed_answer": q.processed_answer,
+                        "expected_answer": q.expected_answer,
                         "marks_obtained": q.marks_obtained,
                         "max_marks": q.max_marks,
-                        "feedback": q.feedback
+                        "feedback": q.feedback,
+                        "rationale": {
+                            "points_awarded": q.rationale.points_awarded if q.rationale else [],
+                            "points_deducted": q.rationale.points_deducted if q.rationale else [],
+                            "improvement_tip": q.rationale.improvement_tip if q.rationale else ""
+                        } if q.rationale else None,
+                        "concept_alignment": q.concept_alignment
                     }
                     for q in result.results
                 ]
