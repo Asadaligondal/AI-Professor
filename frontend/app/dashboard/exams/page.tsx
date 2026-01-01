@@ -118,7 +118,7 @@ export default function ExamsListPage() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/dashboard/results/${exam.id}`);
+                      router.push(`/exams/${exam.id}`);
                     }}
                   >
                     <Eye className="mr-2 h-4 w-4" />

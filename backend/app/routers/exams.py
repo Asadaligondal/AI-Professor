@@ -136,15 +136,22 @@ async def get_exams(
     db: Session = Depends(get_db)
 ):
     """Get all exams for a user"""
+    logger.info(f"Getting exams for user_id: {user_id}")
+    
     # Get user
     user = db.query(models.User).filter(models.User.clerk_id == user_id).first()
     if not user:
+        logger.info(f"User not found: {user_id}")
         return []
+    
+    logger.info(f"Found user with id: {user.id}")
     
     # Get exams with submission counts
     exams = db.query(models.Exam).filter(
         models.Exam.owner_id == user.id
     ).order_by(models.Exam.created_at.desc()).all()
+    
+    logger.info(f"Found {len(exams)} exams")
     
     # Add submission counts
     exam_list = []
@@ -160,4 +167,5 @@ async def get_exams(
         }
         exam_list.append(exam_dict)
     
+    logger.info(f"Returning {len(exam_list)} exams")
     return exam_list

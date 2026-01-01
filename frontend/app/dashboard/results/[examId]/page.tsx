@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,10 @@ export default function ResultsPage({ params }: ResultsPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const searchParams = useSearchParams();
   const { examId: examIdStr } = use(params);
   const examId = parseInt(examIdStr);
+  const studentId = searchParams.get("studentId"); // Get studentId from query params
   
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
@@ -43,12 +45,20 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     queryFn: () => examService.getExamSubmissions(examId),
   });
 
-  // Initialize submissions when data is fetched
+  // Initialize submissions when data is fetched, filter by studentId if provided
   useEffect(() => {
     if (fetchedSubmissions) {
-      setSubmissions(fetchedSubmissions);
+      if (studentId) {
+        // Filter to show only specific student
+        const filtered = fetchedSubmissions.filter(
+          (sub) => sub.id === parseInt(studentId)
+        );
+        setSubmissions(filtered);
+      } else {
+        setSubmissions(fetchedSubmissions);
+      }
     }
-  }, [fetchedSubmissions]);
+  }, [fetchedSubmissions, studentId]);
 
   // Save mutation for batch updates
   const saveMutation = useMutation({
@@ -224,19 +234,27 @@ export default function ResultsPage({ params }: ResultsPageProps) {
         <div className="container mx-auto px-4 py-4">
           <Button
             variant="ghost"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => studentId ? router.push(`/exams/${examId}`) : router.push("/dashboard")}
             className="mb-2"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            {studentId ? "Back to All Students" : "Back to Dashboard"}
           </Button>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
                 {exam?.title || "Exam Results"}
+                {studentId && submissions[0] && (
+                  <span className="text-lg font-normal text-zinc-600 dark:text-zinc-400 ml-2">
+                    - {submissions[0].student_name}
+                  </span>
+                )}
               </h1>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {submissions.length} student{submissions.length !== 1 ? "s" : ""} graded
+                {studentId 
+                  ? `Detailed analysis for ${submissions[0]?.student_name || "student"}`
+                  : `${submissions.length} student${submissions.length !== 1 ? "s" : ""} graded`
+                }
               </p>
             </div>
             <div className="flex gap-2">
@@ -310,12 +328,6 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                         // Check if this question has the new explainable reasoning structure
                         const hasRationale = question.rationale || 
                           (question.processed_answer && question.expected_answer);
-                        
-                        console.log('Question', qIdx, 'hasRationale:', hasRationale, 'data:', {
-                          hasRationaleField: !!question.rationale,
-                          hasProcessed: !!question.processed_answer,
-                          hasExpected: !!question.expected_answer
-                        });
 
                         if (hasRationale) {
                           // Render the detailed explainable reasoning view
