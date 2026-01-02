@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Download, Save, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, Save, Loader2, CheckCircle2, Eye } from "lucide-react";
 import { examService } from "@/lib/api";
 import { Submission } from "@/types";
 import { toast } from "sonner";
@@ -258,6 +258,15 @@ export default function ResultsPage({ params }: ResultsPageProps) {
               </p>
             </div>
             <div className="flex gap-2">
+              {studentId && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/exams/${examId}/review/${studentId}`)}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Paper
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={exportToExcel}

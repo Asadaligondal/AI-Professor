@@ -118,10 +118,8 @@ export function SubmissionsTable({ submissions, examId, exam }: SubmissionsTable
               variant="outline"
               size="sm"
               onClick={() => {
-                // Navigate to view paper (could be implemented later)
-                console.log("View paper for submission:", submission.id);
+                router.push(`/dashboard/exams/${examId}/review/${submission.id}`);
               }}
-              disabled
             >
               <Eye className="mr-2 h-4 w-4" />
               View Paper
