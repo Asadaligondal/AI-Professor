@@ -6,7 +6,26 @@ These schemas define the structure of data sent to and from the API.
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from app.models import SubscriptionStatus, GradeStatus
+import enum
+
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+class SubscriptionStatus(str, enum.Enum):
+    """Subscription status enum"""
+    FREE = "free"
+    BASIC = "basic"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
+
+
+class GradeStatus(str, enum.Enum):
+    """Grade status enum"""
+    PENDING = "pending"
+    GRADED = "graded"
+    REVIEWED = "reviewed"
 
 
 # ============================================================================

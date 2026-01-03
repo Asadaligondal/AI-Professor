@@ -1,23 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, JSON, Enum as SQLEnum
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from app.database import Base
-import enum
-
-
-class SubscriptionStatus(str, enum.Enum):
-    """Subscription status enum"""
-    FREE = "free"
-    BASIC = "basic"
-    PRO = "pro"
-    ENTERPRISE = "enterprise"
-
-
-class GradeStatus(str, enum.Enum):
-    """Grade status enum"""
-    PENDING = "pending"
-    GRADED = "graded"
-    REVIEWED = "reviewed"
+# This file is deprecated and kept for backwards compatibility only.
+# The application now uses Firebase Firestore instead of PostgreSQL/SQLAlchemy.
+# 
+# Enums have been moved to app/schemas.py
+# All database models are now handled through services/firebase_config.py and app/firestore_models.py
 
 
 class User(Base):
