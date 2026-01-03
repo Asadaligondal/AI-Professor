@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from services.firebase_config import initialize_firebase
 
 # Import routers
-from app.routers import grading_router
+from app.routers.grading_firestore import router as grading_router
 from app.routers.exams import router as exams_router
 from app.routers.payments import router as payments_router
 from app.routers.websocket import router as websocket_router
