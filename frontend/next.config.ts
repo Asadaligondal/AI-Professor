@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  // API rewrites for development
+  // API rewrites for production
   async rewrites() {
     return [
       {
