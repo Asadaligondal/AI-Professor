@@ -11,7 +11,7 @@ export const examService = {
   },
 
   // Get single exam
-  getExam: async (examId: number) => {
+  getExam: async (examId: string | number) => {
     const response = await apiClient.get<Exam>(`/api/v1/exams/${examId}`);
     return response.data;
   },
@@ -23,7 +23,7 @@ export const examService = {
   },
 
   // Get exam submissions
-  getExamSubmissions: async (examId: number) => {
+  getExamSubmissions: async (examId: string | number) => {
     const response = await apiClient.get<Submission[]>(
       `/api/v1/exams/${examId}/submissions`
     );
@@ -31,7 +31,7 @@ export const examService = {
   },
 
   // Update submission
-  updateSubmission: async (submissionId: number, data: Partial<Submission>) => {
+  updateSubmission: async (submissionId: string | number, data: Partial<Submission>) => {
     const response = await apiClient.patch<Submission>(
       `/api/v1/exams/submissions/${submissionId}`,
       data
@@ -47,13 +47,15 @@ export const gradingService = {
     userId: string,
     onProgress?: (progress: number) => void
   ) => {
+    // Add user_id as a form field (backend expects it as Form parameter)
+    formData.append("user_id", userId);
+    
     const response = await apiClient.post<GradeResult>(
       "/api/v1/grade",
       formData,
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          "X-Clerk-User-Id": userId,
         },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {

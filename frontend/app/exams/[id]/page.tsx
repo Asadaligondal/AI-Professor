@@ -18,8 +18,7 @@ interface ExamPageProps {
 
 export default function ExamPage({ params }: ExamPageProps) {
   const router = useRouter();
-  const { id: examIdStr } = use(params);
-  const examId = parseInt(examIdStr);
+  const { id: examId } = use(params);
 
   // Fetch exam data
   const { data: exam, isLoading: examLoading, error: examError } = useQuery({

@@ -4,16 +4,15 @@ from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
 
-# Import database components
-from app.database import engine, Base
-from app import models  # This registers all models with Base
+# Import Firebase initialization
+from services.firebase_config import initialize_firebase
 
 # Import routers
 from app.routers import grading_router
 from app.routers.exams import router as exams_router
 from app.routers.payments import router as payments_router
 from app.routers.websocket import router as websocket_router
-from app.routers.dashboard import router as dashboard_router
+from app.routers.dashboard_firestore import router as dashboard_router
 
 load_dotenv()
 
@@ -22,16 +21,16 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     """
     Lifespan context manager for startup and shutdown events.
-    Creates database tables on startup.
+    Initializes Firebase on startup.
     """
-    # Startup: Create database tables
-    print("🚀 Starting up - Creating database tables...")
+    # Startup: Initialize Firebase
+    print("🚀 Starting up - Initializing Firebase...")
     try:
-        Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created successfully")
+        initialize_firebase()
+        print("✅ Firebase initialized successfully")
     except Exception as e:
-        print(f"⚠️  Database connection error: {e}")
-        print("   The API will start, but database operations will fail until DB is available.")
+        print(f"⚠️  Firebase initialization error: {e}")
+        print("   The API will start, but database operations will fail until Firebase is configured.")
     
     yield
     
@@ -51,10 +50,11 @@ app = FastAPI(
 # CORS configuration to allow frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers
@@ -71,13 +71,14 @@ async def root():
     return {
         "message": "Welcome to AI SaaS API - Exam Grading System",
         "status": "operational",
-        "version": "1.0.0",
-        "database": "configured",
+        "version": "2.0.0",
+        "database": "Firebase Firestore",
         "features": [
             "AI-Powered Exam Grading",
             "Multi-page PDF Processing",
             "Batch Student Grading",
-            "Vision AI Integration"
+            "Vision AI Integration",
+            "Cloud-Native NoSQL Database"
         ]
     }
 

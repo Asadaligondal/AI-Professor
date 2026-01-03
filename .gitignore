@@ -5,6 +5,11 @@
 backend/.env
 frontend/.env.local
 
+# Firebase Service Account Keys - NEVER COMMIT!
+backend/*firebase*.json
+backend/firebase-service-account.json
+*-firebase-adminsdk-*.json
+
 # Python helper scripts with potential sensitive data
 quick_credits.py
 set_infinite_credits.py

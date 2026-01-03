@@ -21,5 +21,8 @@
     "python"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "firebase": "^12.7.0"
+  }
 }

@@ -35,10 +35,18 @@ export default function NewExamPage() {
       toast.success(
         `Successfully graded ${data.students_graded} student(s)!`
       );
+      
+      // Log the response for debugging
+      console.log("Grading response:", data);
+      console.log("Exam ID:", data.exam_id);
+      
       // Redirect to results page with exam ID
-      if (data.exam_id) {
+      if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "") {
+        console.log("Redirecting to:", `/dashboard/results/${data.exam_id}`);
         router.push(`/dashboard/results/${data.exam_id}`);
       } else {
+        console.warn("No valid exam_id in response, redirecting to dashboard");
+        toast.error("Grading completed but exam ID not found. Check dashboard.");
         router.push("/dashboard");
       }
     },

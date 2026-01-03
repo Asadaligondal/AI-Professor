@@ -27,9 +27,7 @@ interface ReviewPageProps {
 
 export default function ReviewPage({ params }: ReviewPageProps) {
   const router = useRouter();
-  const { id: examIdStr, studentId: studentIdStr } = use(params);
-  const examId = parseInt(examIdStr);
-  const studentId = parseInt(studentIdStr);
+  const { id: examId, studentId } = use(params);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"side-by-side" | "ai-analysis">("side-by-side");

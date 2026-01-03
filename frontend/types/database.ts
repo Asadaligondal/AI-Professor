@@ -47,7 +47,7 @@ export enum GradingStatus {
 // ============================================================================
 
 export interface User {
-  id: number;
+  id: string | number;
   clerk_user_id: string;
   email: string;
   full_name?: string | null;
@@ -89,8 +89,8 @@ export interface UpdateUserRequest {
 // ============================================================================
 
 export interface Exam {
-  id: number;
-  owner_id: number;
+  id: string | number;
+  owner_id: string | number;
   
   // Exam details
   title: string;
@@ -148,8 +148,8 @@ export interface UpdateExamRequest {
 // ============================================================================
 
 export interface QuestionDetail {
-  id: number;
-  exam_id: number;
+  id: string | number;
+  exam_id: string | number;
   
   // Question information
   question_number: number;
@@ -175,7 +175,7 @@ export interface QuestionDetail {
 }
 
 export interface CreateQuestionDetailRequest {
-  exam_id: number;
+  exam_id: string | number;
   question_number: number;
   question_text?: string;
   question_type?: string;
@@ -192,8 +192,8 @@ export interface CreateQuestionDetailRequest {
 // ============================================================================
 
 export interface Submission {
-  id: number;
-  exam_id: number;
+  id: string | number;
+  exam_id: string | number;
   
   // Student information
   student_name: string;
@@ -222,7 +222,7 @@ export interface Submission {
 }
 
 export interface CreateSubmissionRequest {
-  exam_id: number;
+  exam_id: string | number;
   student_name: string;
   roll_number: string;
   email?: string;
@@ -275,5 +275,5 @@ export interface GradeResult {
   students_graded: number;
   results: any[];  // StudentGradeSchema array
   processing_time?: number;
-  exam_id?: number;
+  exam_id?: string | number;
 }

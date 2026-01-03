@@ -1,15 +1,14 @@
 """
 Exams API Router
-FastAPI endpoints for exam management.
+FastAPI endpoints for exam management using Firestore.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, status
 from typing import List
 
-from app.database import get_db
-from app import models, schemas
+from app.firestore_models import FirestoreHelper
+from app import schemas
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,18 +27,27 @@ router = APIRouter(
     summary="Get exam details",
     description="Retrieve details for a specific exam"
 )
-async def get_exam(
-    exam_id: int,
-    db: Session = Depends(get_db)
-):
+async def get_exam(exam_id: str):
     """Get exam by ID"""
-    exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
+    exam = FirestoreHelper.get_exam(exam_id)
     
     if not exam:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Exam with ID {exam_id} not found"
         )
+    
+    # Map Firestore field names to schema field names
+    if "teacher_id" in exam:
+        exam["owner_id"] = exam.get("teacher_id")
+    if "answer_key_url" in exam:
+        exam["key_pdf_url"] = exam.get("answer_key_url")
+    if "max_marks" in exam:
+        exam["total_marks"] = exam.get("max_marks")
+    if "is_active" not in exam:
+        exam["is_active"] = True
+    if "description" not in exam:
+        exam["description"] = None
     
     return exam
 
@@ -50,13 +58,10 @@ async def get_exam(
     summary="Get exam submissions",
     description="Retrieve all submissions for a specific exam"
 )
-async def get_exam_submissions(
-    exam_id: int,
-    db: Session = Depends(get_db)
-):
+async def get_exam_submissions(exam_id: str):
     """Get all submissions for an exam"""
     # Verify exam exists
-    exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
+    exam = FirestoreHelper.get_exam(exam_id)
     if not exam:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -64,9 +69,23 @@ async def get_exam_submissions(
         )
     
     # Get submissions
-    submissions = db.query(models.Submission).filter(
-        models.Submission.exam_id == exam_id
-    ).order_by(models.Submission.student_name).all()
+    submissions = FirestoreHelper.get_exam_submissions(exam_id)
+    
+    # Map Firestore field names to schema field names
+    for submission in submissions:
+        if "submission_file_url" in submission:
+            submission["answer_pdf_url"] = submission.get("submission_file_url", "")
+        if "status" in submission:
+            submission["grade_status"] = submission.get("status", "pending")
+        if "created_at" in submission and "submitted_at" not in submission:
+            submission["submitted_at"] = submission.get("created_at")
+        if "student_name" not in submission:
+            submission["student_name"] = "Unknown"
+        if "roll_number" not in submission:
+            submission["roll_number"] = "N/A"
+    
+    # Sort by student name
+    submissions.sort(key=lambda x: x.get("student_name", ""))
     
     return submissions
 
@@ -78,14 +97,11 @@ async def get_exam_submissions(
     description="Update marks and feedback for a submission"
 )
 async def update_submission(
-    submission_id: int,
-    update_data: schemas.SubmissionUpdate,
-    db: Session = Depends(get_db)
+    submission_id: str,
+    update_data: schemas.SubmissionUpdate
 ):
     """Update submission marks and feedback"""
-    submission = db.query(models.Submission).filter(
-        models.Submission.id == submission_id
-    ).first()
+    submission = FirestoreHelper.get_submission(submission_id)
     
     if not submission:
         raise HTTPException(
@@ -93,36 +109,41 @@ async def update_submission(
             detail=f"Submission with ID {submission_id} not found"
         )
     
+    updates = {}
+    
     # Update grade_json if provided (contains question-level marks)
     if update_data.grade_json is not None:
-        submission.grade_json = update_data.grade_json
+        updates["grade_json"] = update_data.grade_json
         
         # Recalculate total_score from grade_json
-        if isinstance(update_data.grade_json, dict) and "questions" in update_data.grade_json:
+        if isinstance(update_data.grade_json, dict) and "results" in update_data.grade_json:
             total = 0.0
-            for question in update_data.grade_json["questions"]:
+            for question in update_data.grade_json["results"]:
                 if "marks_obtained" in question:
                     try:
                         total += float(question["marks_obtained"])
                     except (ValueError, TypeError):
                         pass
-            submission.total_score = total
+            updates["total_score"] = total
             logger.info(f"Recalculated total_score: {total} for submission {submission_id}")
     
     # Allow direct total_score update if grade_json not provided
     elif update_data.total_score is not None:
-        submission.total_score = update_data.total_score
+        updates["total_score"] = update_data.total_score
     
     # Update feedback
     if update_data.ai_feedback is not None:
-        submission.ai_feedback = update_data.ai_feedback
+        updates["ai_feedback"] = update_data.ai_feedback
     
-    db.commit()
-    db.refresh(submission)
+    # Apply updates
+    if updates:
+        FirestoreHelper.update_submission(submission_id, updates)
     
-    logger.info(f"Updated submission {submission_id} for student {submission.student_name}, total_score: {submission.total_score}")
+    # Get updated submission
+    updated_submission = FirestoreHelper.get_submission(submission_id)
+    logger.info(f"Updated submission {submission_id} for student {updated_submission['student_name']}, total_score: {updated_submission.get('total_score', 0)}")
     
-    return submission
+    return updated_submission
 
 
 @router.get(
@@ -131,39 +152,30 @@ async def update_submission(
     summary="Get all exams",
     description="Retrieve all exams for the authenticated user"
 )
-async def get_exams(
-    user_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_exams(user_id: str):
     """Get all exams for a user"""
     logger.info(f"Getting exams for user_id: {user_id}")
     
-    # Get user
-    user = db.query(models.User).filter(models.User.clerk_id == user_id).first()
+    # Get or create user
+    user = FirestoreHelper.get_user(user_id)
     if not user:
-        logger.info(f"User not found: {user_id}")
-        return []
+        logger.info(f"User not found, creating new user: {user_id}")
+        # Auto-create user with default credits
+        FirestoreHelper.create_user(user_id, email=f"{user_id}@temp.com", initial_credits=5)
     
-    logger.info(f"Found user with id: {user.id}")
-    
-    # Get exams with submission counts
-    exams = db.query(models.Exam).filter(
-        models.Exam.owner_id == user.id
-    ).order_by(models.Exam.created_at.desc()).all()
-    
+    # Get exams for this user
+    exams = FirestoreHelper.get_user_exams(user_id)
     logger.info(f"Found {len(exams)} exams")
     
     # Add submission counts
     exam_list = []
     for exam in exams:
-        submission_count = db.query(models.Submission).filter(
-            models.Submission.exam_id == exam.id
-        ).count()
+        submissions = FirestoreHelper.get_exam_submissions(exam["id"])
         
         exam_dict = {
-            **exam.__dict__,
-            "total_submissions": submission_count,
-            "total_questions": 0  # Can be calculated from question_details if needed
+            **exam,
+            "total_submissions": len(submissions),
+            "total_questions": len(exam.get("answer_key_data", {}).get("questions", []))
         }
         exam_list.append(exam_dict)
     

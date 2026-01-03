@@ -43,7 +43,7 @@ class StudentGradeSchema(BaseModel):
 
 class GradeExamRequest(BaseModel):
     """Schema for exam grading request"""
-    exam_id: int = Field(..., description="ID of the exam being graded")
+    exam_id: str = Field(..., description="ID of the exam being graded")
     marks_per_question: float = Field(default=1.0, ge=0.5, description="Marks per question")
     max_tokens: int = Field(default=4000, ge=1000, le=16000, description="Max API tokens")
     temperature: float = Field(default=0.2, ge=0.0, le=1.0, description="API temperature")
@@ -56,7 +56,7 @@ class GradeExamResponse(BaseModel):
     students_graded: int = Field(..., ge=0, description="Number of students graded")
     results: List[StudentGradeSchema] = Field(..., description="Grading results for all students")
     processing_time: Optional[float] = Field(None, description="Time taken in seconds")
-    exam_id: Optional[int] = Field(None, description="ID of the created exam")
+    exam_id: Optional[str] = Field(None, description="ID of the created exam")
 
 
 class GradingErrorResponse(BaseModel):
@@ -95,7 +95,7 @@ class UserResponse(UserBase):
     """Schema for user response"""
     model_config = ConfigDict(from_attributes=True)
     
-    id: int
+    id: str
     clerk_id: str
     subscription_status: SubscriptionStatus
     credits: int
@@ -131,16 +131,14 @@ class ExamUpdate(BaseModel):
 
 class ExamResponse(ExamBase):
     """Schema for exam response"""
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra='allow')
     
-    id: int
-    owner_id: int
-    key_pdf_url: str
-    is_active: bool
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
+    id: str
+    owner_id: Optional[str] = None
+    key_pdf_url: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[str] = None  # ISO string from Firestore
+    updated_at: Optional[str] = None
 class ExamWithDetails(ExamResponse):
     """Exam response with related data"""
     total_submissions: int = 0
@@ -160,7 +158,7 @@ class QuestionDetailBase(BaseModel):
 
 class QuestionDetailCreate(QuestionDetailBase):
     """Schema for creating question details"""
-    exam_id: int
+    exam_id: str
     marking_rubric: Optional[Dict[str, Any]] = None
     expected_keywords: Optional[List[str]] = None
 
@@ -177,8 +175,8 @@ class QuestionDetailResponse(QuestionDetailBase):
     """Schema for question detail response"""
     model_config = ConfigDict(from_attributes=True)
     
-    id: int
-    exam_id: int
+    id: str
+    exam_id: str
     marking_rubric: Optional[Dict[str, Any]] = None
     expected_keywords: Optional[List[str]] = None
     created_at: datetime
@@ -197,7 +195,7 @@ class SubmissionBase(BaseModel):
 
 class SubmissionCreate(SubmissionBase):
     """Schema for creating a submission"""
-    exam_id: int
+    exam_id: str
     answer_pdf_url: str = Field(..., description="URL to the student's answer PDF")
 
 
@@ -213,19 +211,19 @@ class SubmissionUpdate(BaseModel):
 
 class SubmissionResponse(SubmissionBase):
     """Schema for submission response"""
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra='allow')
     
-    id: int
-    exam_id: int
-    answer_pdf_url: str
+    id: str
+    exam_id: str
+    answer_pdf_url: Optional[str] = None
     grade_json: Optional[Dict[str, Any]] = None
-    total_score: Optional[int] = None
+    total_score: Optional[float] = None
     percentage: Optional[int] = None
-    grade_status: GradeStatus
+    grade_status: Optional[str] = "pending"
     ai_feedback: Optional[str] = None
-    submitted_at: datetime
-    graded_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    submitted_at: Optional[str] = None  # ISO string from Firestore
+    graded_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class SubmissionWithExam(SubmissionResponse):
@@ -248,14 +246,14 @@ class QuestionGrade(BaseModel):
 
 class GradeSubmissionRequest(BaseModel):
     """Schema for grading request"""
-    submission_id: int
+    submission_id: str
     question_grades: List[QuestionGrade]
     ai_feedback: Optional[str] = None
 
 
 class GradeResult(BaseModel):
     """Schema for grading result"""
-    submission_id: int
+    submission_id: str
     total_score: float
     percentage: float
     grade_status: GradeStatus

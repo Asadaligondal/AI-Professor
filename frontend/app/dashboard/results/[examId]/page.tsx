@@ -26,8 +26,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
   const queryClient = useQueryClient();
   const { user } = useUser();
   const searchParams = useSearchParams();
-  const { examId: examIdStr } = use(params);
-  const examId = parseInt(examIdStr);
+  const { examId } = use(params);
   const studentId = searchParams.get("studentId"); // Get studentId from query params
   
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -51,7 +50,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
       if (studentId) {
         // Filter to show only specific student
         const filtered = fetchedSubmissions.filter(
-          (sub) => sub.id === parseInt(studentId)
+          (sub) => sub.id === studentId
         );
         setSubmissions(filtered);
       } else {
