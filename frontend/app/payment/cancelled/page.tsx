@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { XCircle, ArrowLeft, Mail } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default function PaymentCancelledPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

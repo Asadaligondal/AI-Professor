@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
 
+export const dynamic = 'force-dynamic';
+
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
