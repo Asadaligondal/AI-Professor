@@ -1,5 +1,6 @@
 "use client";
 
+// Force rebuild - TypeScript fixes applied
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
