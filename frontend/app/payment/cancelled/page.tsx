@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { XCircle, ArrowLeft, Mail } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
-export default function PaymentCancelledPage() {
+function PaymentCancelledContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason") || "Payment was cancelled";
@@ -97,5 +98,17 @@ export default function PaymentCancelledPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentCancelledPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-zinc-900 dark:to-black flex items-center justify-center">
+        <div className="text-center">Loading...</div>
+      </div>
+    }>
+      <PaymentCancelledContent />
+    </Suspense>
   );
 }
