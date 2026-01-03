@@ -111,7 +111,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
 
   // Update individual field
   const updateField = (
-    submissionId: number,
+    submissionId: string | number,
     field: keyof Submission,
     value: any
   ) => {
@@ -125,7 +125,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
 
   // Update question marks and recalculate total with auto-save
   const updateQuestionMarks = (
-    submissionId: number,
+    submissionId: string | number,
     questionIndex: number,
     newMarks: number
   ) => {
@@ -163,7 +163,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
 
   // Update feedback
   const updateFeedback = (
-    submissionId: number,
+    submissionId: string | number,
     questionIndex: number,
     newFeedback: string
   ) => {
