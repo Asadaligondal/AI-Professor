@@ -164,9 +164,9 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                           Student's Handwritten Answer
                         </h3>
                         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 h-[600px]">
-                          {submission?.answer_pdf_url || submission?.submission_file_url ? (
+                          {submission?.answer_pdf_url ? (
                             <iframe
-                              src={submission.answer_pdf_url || submission.submission_file_url}
+                              src={submission.answer_pdf_url}
                               className="w-full h-full rounded-lg"
                               title={`${submission.student_name}'s Answer Sheet`}
                             />
