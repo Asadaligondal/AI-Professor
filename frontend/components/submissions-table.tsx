@@ -29,7 +29,7 @@ import { Submission, Exam } from "@/types";
 
 interface SubmissionsTableProps {
   submissions: Submission[];
-  examId: number;
+  examId: string | number;
   exam?: Exam;
 }
 
