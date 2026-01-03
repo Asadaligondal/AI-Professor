@@ -13,6 +13,7 @@ from app.firestore_models import FirestoreHelper
 from app import schemas
 from app.config import get_settings
 from services.ai_grader import AIGradingService, GradingError, StudentGradeResult
+from services.storage_service import get_storage_service
 
 
 # Configure logging
@@ -194,23 +195,94 @@ async def grade_exam(
             "questions": []  # Can be populated from professor key if needed
         }
         
+        # First create exam to get exam_id
         exam_id = FirestoreHelper.create_exam(
             teacher_id=user_id,
             title=exam_title,
-            answer_key_url="",  # Could store in Cloud Storage if needed
+            answer_key_url="",  # Will update after upload
             answer_key_data=answer_key_data,
             max_marks=max_marks
         )
         
-        logger.info(f"✅ Created exam with ID: {exam_id} (type: {type(exam_id).__name__})")
-        logger.info(f"   Title: {exam_title}, Teacher: {user_id}")
+        logger.info(f"✅ Created exam with ID: {exam_id}")
         
-        # Verify exam was created
-        verify_exam = FirestoreHelper.get_exam(exam_id)
-        if verify_exam:
-            logger.info(f"✅ Exam verified in Firestore: {verify_exam.get('id')}")
-        else:
-            logger.error(f"❌ CRITICAL: Exam {exam_id} was created but cannot be retrieved!")
+        # Upload PDFs to Firebase Storage or store as base64
+        answer_key_url = ""
+        batch_papers_url = ""
+        
+        try:
+            logger.info("📤 Attempting to upload PDFs to Firebase Storage...")
+            storage = get_storage_service()
+            
+            if storage.bucket:
+                logger.info(f"📦 Storage bucket available: {storage.bucket.name}")
+                
+                # Upload professor's answer key
+                logger.info(f"📄 Uploading professor key ({len(professor_key_bytes)} bytes)...")
+                answer_key_url = storage.upload_professor_key(
+                    exam_id=exam_id,
+                    file_data=professor_key_bytes,
+                    filename=professor_key.filename
+                )
+                
+                if answer_key_url:
+                    logger.info(f"✅ Answer key uploaded: {answer_key_url}")
+                
+                # Upload batch student papers (combined PDF)
+                logger.info(f"📄 Uploading student papers ({len(student_papers_bytes)} bytes)...")
+                batch_papers_url = storage.upload_batch_student_papers(
+                    exam_id=exam_id,
+                    file_data=student_papers_bytes,
+                    filename=student_papers.filename
+                )
+                
+                if batch_papers_url:
+                    logger.info(f"✅ Student papers uploaded: {batch_papers_url}")
+                
+                # Update exam with answer key URL
+                if answer_key_url:
+                    FirestoreHelper.update_exam(exam_id, {"answer_key_url": answer_key_url})
+                    logger.info(f"✅ Updated exam {exam_id} with answer_key_url")
+            else:
+                # FALLBACK: Store PDFs as base64 data URLs in Firestore
+                logger.warning("⚠️ Firebase Storage not available - using base64 fallback")
+                
+                import base64
+                
+                # Convert PDFs to base64 data URLs
+                answer_key_size_kb = len(professor_key_bytes) / 1024
+                papers_size_kb = len(student_papers_bytes) / 1024
+                
+                logger.info(f"📄 Professor key size: {answer_key_size_kb:.1f} KB")
+                logger.info(f"📄 Student papers size: {papers_size_kb:.1f} KB")
+                
+                # Only store if under 500KB to avoid hitting Firestore 1MB limit
+                if answer_key_size_kb < 500:
+                    answer_key_b64 = base64.b64encode(professor_key_bytes).decode('utf-8')
+                    answer_key_url = f"data:application/pdf;base64,{answer_key_b64}"
+                    logger.info(f"✅ Answer key stored as base64 data URL")
+                else:
+                    logger.warning(f"⚠️ Answer key too large ({answer_key_size_kb:.1f}KB) for base64 storage")
+                
+                if papers_size_kb < 500:
+                    papers_b64 = base64.b64encode(student_papers_bytes).decode('utf-8')
+                    batch_papers_url = f"data:application/pdf;base64,{papers_b64}"
+                    logger.info(f"✅ Student papers stored as base64 data URL")
+                else:
+                    logger.warning(f"⚠️ Student papers too large ({papers_size_kb:.1f}KB) for base64 storage")
+                
+                # Update exam with data URL
+                if answer_key_url:
+                    FirestoreHelper.update_exam(exam_id, {"answer_key_url": answer_key_url})
+                    logger.info(f"✅ Updated exam {exam_id} with base64 answer key")
+                
+                logger.info("ℹ️  Using temporary base64 storage. Enable Firebase Storage + billing for better performance.")
+            
+        except Exception as storage_error:
+            logger.error(f"❌ Storage upload failed: {str(storage_error)}")
+            logger.info("ℹ️  Continuing without PDF storage - only extracted text will be saved")
+            # Continue without storage URLs (PDFs already processed in memory)
+            batch_papers_url = ""
         
         # Convert results to response schema and save submissions
         student_grades = []
@@ -266,11 +338,15 @@ async def grade_exam(
                 ]
             }
             
+            # Note: Individual student papers would need PDF splitting logic
+            # For now, we reference the batch upload URL
+            student_paper_url = batch_papers_url  # In production, split PDF and upload individual pages
+            
             submission_id = FirestoreHelper.create_submission(
                 exam_id=exam_id,
                 student_name=result.student_name,
                 roll_number=result.roll_no,
-                submission_file_url=""  # Could store in Cloud Storage if needed
+                submission_file_url=student_paper_url
             )
             
             # Complete grading for this submission

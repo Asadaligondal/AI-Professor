@@ -164,21 +164,22 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                           Student's Handwritten Answer
                         </h3>
                         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 h-[600px]">
-                          {/* For now showing text, but this should be the actual paper image */}
-                          <div className="p-4 h-full overflow-auto">
-                            <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-mono text-sm">
-                              {currentQuestion.student_answer}
-                            </p>
-                            <p className="text-xs text-zinc-500 mt-4 italic">
-                              Note: In production, this would show the actual handwritten paper image with zoom/pan controls.
-                            </p>
-                          </div>
-                          {/* Uncomment when you have actual image URLs:
-                          <ImageViewer 
-                            imageUrl={currentQuestion.student_paper_image_url}
-                            alt={`${submission.student_name} - Question ${currentQuestion.q_num}`}
-                          />
-                          */}
+                          {submission?.answer_pdf_url || submission?.submission_file_url ? (
+                            <iframe
+                              src={submission.answer_pdf_url || submission.submission_file_url}
+                              className="w-full h-full rounded-lg"
+                              title={`${submission.student_name}'s Answer Sheet`}
+                            />
+                          ) : (
+                            <div className="p-4 h-full overflow-auto">
+                              <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-mono text-sm">
+                                {currentQuestion.student_answer}
+                              </p>
+                              <p className="text-xs text-zinc-500 mt-4 italic">
+                                Note: PDF not available. Showing extracted text.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -200,10 +201,20 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                         <h3 className="text-sm font-semibold text-green-900 dark:text-green-300 mb-4">
                           Professor's Answer Key
                         </h3>
-                        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
-                          <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
-                            {currentQuestion.expected_answer || "Answer key not available."}
-                          </p>
+                        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 h-[600px]">
+                          {exam?.key_pdf_url || exam?.answer_key_url ? (
+                            <iframe
+                              src={exam.key_pdf_url || exam.answer_key_url}
+                              className="w-full h-full rounded-lg"
+                              title="Professor's Answer Key"
+                            />
+                          ) : (
+                            <div className="p-6">
+                              <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                                {currentQuestion.expected_answer || "Answer key not available."}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

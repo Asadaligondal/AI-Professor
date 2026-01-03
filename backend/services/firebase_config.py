@@ -50,14 +50,17 @@ def initialize_firebase() -> firestore.Client:
                     f"Invalid service account JSON. Missing required fields: {required_fields}"
                 )
         
-        # Initialize Firebase Admin SDK
+        # Initialize Firebase Admin SDK with Storage bucket
         cred = credentials.Certificate(str(service_account_path))
-        firebase_admin.initialize_app(cred)
+        firebase_admin.initialize_app(cred, {
+            'storageBucket': f"{service_account_data['project_id']}.appspot.com"
+        })
         
         # Get Firestore client
         _db = firestore.client()
         
         print(f"✅ Firebase initialized successfully with project: {service_account_data['project_id']}")
+        print(f"✅ Storage bucket: {service_account_data['project_id']}.appspot.com")
         return _db
         
     except Exception as e:
