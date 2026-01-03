@@ -163,6 +163,7 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                         <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-4">
                           Student's Handwritten Answer
                         </h3>
+                        {/* PDF viewer for student submission */}
                         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 h-[600px]">
                           {submission?.answer_pdf_url ? (
                             <iframe
@@ -202,9 +203,9 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                           Professor's Answer Key
                         </h3>
                         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 h-[600px]">
-                          {exam?.key_pdf_url || exam?.answer_key_url ? (
+                          {exam?.answer_key_pdf_url ? (
                             <iframe
-                              src={exam.key_pdf_url || exam.answer_key_url}
+                              src={exam.answer_key_pdf_url}
                               className="w-full h-full rounded-lg"
                               title="Professor's Answer Key"
                             />
