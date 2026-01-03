@@ -3,12 +3,19 @@
 .env.local
 .env.*.local
 backend/.env
+backend/.env.local
+backend/.env.production
+backend/.env.development
+frontend/.env
 frontend/.env.local
+**/.env
+**/.env.local
 
 # Firebase Service Account Keys - NEVER COMMIT!
 backend/*firebase*.json
 backend/firebase-service-account.json
 *-firebase-adminsdk-*.json
+**/*firebase*adminsdk*.json
 
 # Python helper scripts with potential sensitive data
 quick_credits.py
