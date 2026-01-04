@@ -14,8 +14,8 @@ export default function ExamsListPage() {
 
   // Fetch exams
   const { data: exams, isLoading } = useQuery({
-    queryKey: ["exams", user?.id],
-    queryFn: () => examService.getExams(user!.id),
+    queryKey: ["exams", user?.uid],
+    queryFn: () => examService.getExams(user!.uid),
     enabled: !!user,
   });
 
