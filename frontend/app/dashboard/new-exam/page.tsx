@@ -26,7 +26,7 @@ export default function NewExamPage() {
 
   const gradingMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      if (!user?.id) {
+      if (!user?.uid) {
         throw new Error("User not authenticated");
       }
       return gradingService.gradeExam(formData, user.uid, setUploadProgress);
