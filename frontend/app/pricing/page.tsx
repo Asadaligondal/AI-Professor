@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Loader2, Zap, Crown, Building2 } from "lucide-react";
@@ -71,13 +71,13 @@ const plans: Plan[] = [
 
 export default function PricingPage() {
   const router = useRouter();
-  const { user, isLoaded } = useUser();
+  const { user, loading } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handleUpgrade = async (planId: string) => {
-    if (!isLoaded || !user) {
+    if (loading || !user) {
       toast.error("Please sign in to upgrade");
-      router.push("/sign-in");
+      router.push("/login");
       return;
     }
 
@@ -93,7 +93,7 @@ export default function PricingPage() {
       const response = await apiClient.post("/api/v1/payments/create", {
         plan_type: planId,
         gateway_choice: "safepay",
-        user_id: user.id
+        user_id: user.uid
       });
 
       const { checkout_url } = response.data;

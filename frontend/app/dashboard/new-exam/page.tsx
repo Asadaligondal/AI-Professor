@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 export default function NewExamPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [examTitle, setExamTitle] = useState("");
   const [examDescription, setExamDescription] = useState("");
   const [marksPerQuestion, setMarksPerQuestion] = useState("1.0");
@@ -29,7 +29,7 @@ export default function NewExamPage() {
       if (!user?.id) {
         throw new Error("User not authenticated");
       }
-      return gradingService.gradeExam(formData, user.id, setUploadProgress);
+      return gradingService.gradeExam(formData, user.uid, setUploadProgress);
     },
     onSuccess: (data) => {
       toast.success(

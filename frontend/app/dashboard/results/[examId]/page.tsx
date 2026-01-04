@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,7 @@ interface ResultsPageProps {
 export default function ResultsPage({ params }: ResultsPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useUser();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const { examId } = use(params);
   const studentId = searchParams.get("studentId"); // Get studentId from query params

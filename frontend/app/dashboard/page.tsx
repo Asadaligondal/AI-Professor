@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,20 +9,20 @@ import { PlusCircle, FileText, GraduationCap, TrendingUp, Crown, Loader2 } from 
 import { dashboardService } from "@/lib/api";
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
+  const { user, loading, signOut } = useAuth();
   const router = useRouter();
 
   // Fetch dashboard stats from backend
   const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["dashboard-stats", user?.id],
-    queryFn: () => dashboardService.getStats(user!.id),
+    queryKey: ["dashboard-stats", user?.uid],
+    queryFn: () => dashboardService.getStats(user!.uid),
     enabled: !!user,
     refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refetch when window regains focus
     staleTime: 0, // Consider data stale immediately
   });
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
@@ -66,9 +66,15 @@ export default function DashboardPage() {
               Upgrade to Pro
             </Button>
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              Welcome, {user?.firstName || "User"}
+              {user?.email}
             </span>
-            <UserButton afterSignOutUrl="/" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+            >
+              Sign Out
+            </Button>
           </div>
         </div>
       </header>

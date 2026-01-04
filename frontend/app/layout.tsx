@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -20,15 +20,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={`${inter.className} antialiased`}>
+    <html lang="en">
+      <body className={`${inter.className} antialiased`}>
+        <AuthProvider>
           <Providers>
             {children}
             <Toaster position="top-right" richColors />
           </Providers>
-        </body>
-      </html>
-    </ClerkProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

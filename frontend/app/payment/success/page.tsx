@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
 
@@ -36,7 +36,7 @@ function PaymentSuccessContent() {
 
     // Setup WebSocket connection for real-time updates
     if (user) {
-      const ws = new WebSocket(`ws://localhost:8000/ws/notifications/${user.id}`);
+      const ws = new WebSocket(`ws://localhost:8000/ws/notifications/${user.uid}`);
       
       ws.onopen = () => {
         console.log("WebSocket connected");

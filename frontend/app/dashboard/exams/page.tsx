@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { examService } from "@/lib/api";
 
 export default function ExamsListPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   // Fetch exams
   const { data: exams, isLoading } = useQuery({
