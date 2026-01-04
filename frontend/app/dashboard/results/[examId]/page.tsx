@@ -78,8 +78,8 @@ export default function ResultsPage({ params }: ResultsPageProps) {
       // Invalidate submissions query
       queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
       // Invalidate dashboard stats to update average grade in real-time
-      if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ["dashboard-stats", user.id] });
+      if (user?.uid) {
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats", user.uid] });
         toast.success("Dashboard stats updated!", { duration: 2000 });
       }
     },
@@ -100,8 +100,8 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     onSuccess: () => {
       // Invalidate queries silently in background
       queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
-      if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ["dashboard-stats", user.id] });
+      if (user?.uid) {
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats", user.uid] });
       }
     },
     onError: () => {
