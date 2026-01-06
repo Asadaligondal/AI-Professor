@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Copy, CheckCircle2, CreditCard, MessageCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PaymentInstructionsPage() {
+function PaymentInstructionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
@@ -265,5 +265,17 @@ export default function PaymentInstructionsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function PaymentInstructionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <PaymentInstructionsContent />
+    </Suspense>
   );
 }
