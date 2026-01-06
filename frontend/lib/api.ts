@@ -78,6 +78,7 @@ export interface DashboardStats {
   total_students: number;
   credits: number;
   subscription_status: string;
+  current_plan: string;
 }
 
 export const dashboardService = {

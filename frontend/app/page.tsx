@@ -73,26 +73,26 @@ export default function Home() {
         </div>
         <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
               <Sparkles className="h-4 w-4" />
               AI-Powered Grading Technology
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-zinc-50 mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-zinc-50 mb-6 leading-tight animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               Grade Exams 10x Faster with{" "}
-              <span className="text-blue-600">AI Technology</span>
+              <span className="text-blue-600 animate-gradient-text">AI Technology</span>
             </h1>
             
-            <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
               Upload handwritten or typed answer keys, let our AI analyze and grade student papers automatically. 
               Save hours of manual grading work.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
               {user ? (
                 <Button
                   size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 transition-all hover:scale-105"
                   onClick={() => router.push("/dashboard")}
                 >
                   Go to Dashboard
@@ -102,7 +102,7 @@ export default function Home() {
                 <>
                   <Button
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 transition-all hover:scale-105"
                     onClick={() => router.push("/signup")}
                   >
                     Get Started Free
@@ -111,7 +111,7 @@ export default function Home() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="px-8"
+                    className="px-8 transition-all hover:scale-105"
                     onClick={() => router.push("/login")}
                   >
                     Sign In
@@ -120,7 +120,7 @@ export default function Home() {
               )}
             </div>
 
-            <p className="mt-6 text-sm text-zinc-500">
+            <p className="mt-6 text-sm text-zinc-500 animate-fade-in" style={{ animationDelay: '0.5s' }}>
               No credit card required • Free plan available
             </p>
           </div>
@@ -130,7 +130,7 @@ export default function Home() {
       {/* Features Section */}
       <section id="features" className="py-20 bg-white/50 backdrop-blur-sm dark:bg-zinc-900/50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-fade-in-up">
             <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
               Powerful Features for Modern Educators
             </h2>
@@ -140,7 +140,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            <Card className="border-l-4 border-l-blue-600">
+            <Card className="border-l-4 border-l-blue-600 animate-fade-in-up transition-all hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.1s' }}>
               <CardHeader>
                 <Zap className="h-10 w-10 text-blue-600 mb-3" />
                 <CardTitle className="text-xl">AI Handwriting Recognition</CardTitle>
@@ -152,7 +152,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-blue-600">
+            <Card className="border-l-4 border-l-blue-600 animate-fade-in-up transition-all hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.2s' }}>
               <CardHeader>
                 <GraduationCap className="h-10 w-10 text-blue-600 mb-3" />
                 <CardTitle className="text-xl">Automated Grading</CardTitle>
@@ -164,7 +164,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-blue-600">
+            <Card className="border-l-4 border-l-blue-600 animate-fade-in-up transition-all hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.3s' }}>
               <CardHeader>
                 <LineChart className="h-10 w-10 text-blue-600 mb-3" />
                 <CardTitle className="text-xl">Analytics & Insights</CardTitle>
@@ -176,7 +176,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-blue-600">
+            <Card className="border-l-4 border-l-blue-600 animate-fade-in-up transition-all hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.4s' }}>
               <CardHeader>
                 <Download className="h-10 w-10 text-blue-600 mb-3" />
                 <CardTitle className="text-xl">Export Results</CardTitle>
@@ -194,7 +194,7 @@ export default function Home() {
       {/* How It Works Section */}
       <section className="py-16 md:py-20 bg-gradient-to-r from-blue-600/5 via-indigo-500/5 to-purple-600/5 backdrop-blur-sm dark:from-blue-500/10 dark:via-indigo-500/10 dark:to-purple-500/10">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-fade-in-up">
             <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
               How It Works
             </h2>
@@ -205,8 +205,8 @@ export default function Home() {
 
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-4 gap-8">
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4">
+              <div className="flex flex-col items-center text-center animate-fade-in-up transition-all hover:scale-105" style={{ animationDelay: '0.1s' }}>
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4 transition-all hover:shadow-lg">
                   1
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-zinc-900 dark:text-zinc-50">Upload Answer Key</h3>
@@ -215,8 +215,8 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4">
+              <div className="flex flex-col items-center text-center animate-fade-in-up transition-all hover:scale-105" style={{ animationDelay: '0.2s' }}>
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4 transition-all hover:shadow-lg">
                   2
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-zinc-900 dark:text-zinc-50">Upload Student Papers</h3>
@@ -225,8 +225,8 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4">
+              <div className="flex flex-col items-center text-center animate-fade-in-up transition-all hover:scale-105" style={{ animationDelay: '0.3s' }}>
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4 transition-all hover:shadow-lg">
                   3
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-zinc-900 dark:text-zinc-50">AI Grades Automatically</h3>
@@ -235,8 +235,8 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4">
+              <div className="flex flex-col items-center text-center animate-fade-in-up transition-all hover:scale-105" style={{ animationDelay: '0.4s' }}>
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white mb-4 transition-all hover:shadow-lg">
                   4
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-zinc-900 dark:text-zinc-50">Review & Export</h3>
@@ -252,7 +252,7 @@ export default function Home() {
       {/* Pricing Preview Section */}
       <section className="py-20 bg-white/50 backdrop-blur-sm dark:bg-zinc-900/50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-fade-in-up">
             <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
               Simple, Transparent Pricing
             </h2>
@@ -262,7 +262,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <Card>
+            <Card className="animate-fade-in-up transition-all hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.1s' }}>
               <CardHeader>
                 <CardTitle className="text-2xl">Free</CardTitle>
                 <div className="mt-4">
@@ -282,7 +282,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-blue-600 relative">
+            <Card className="border-2 border-blue-600 relative animate-fade-in-up transition-all hover:shadow-xl hover:-translate-y-2" style={{ animationDelay: '0.2s' }}>
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Popular
               </div>
@@ -305,7 +305,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="animate-fade-in-up transition-all hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.3s' }}>
               <CardHeader>
                 <CardTitle className="text-2xl">Enterprise</CardTitle>
                 <div className="mt-4">
@@ -326,9 +326,9 @@ export default function Home() {
             </Card>
           </div>
 
-          <div className="text-center mt-8">
+          <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <Link href="/pricing">
-              <Button size="lg" variant="outline" className="px-8">
+              <Button size="lg" variant="outline" className="px-8 transition-all hover:scale-105">
                 View All Plans & Features
               </Button>
             </Link>
@@ -339,16 +339,17 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-16 md:py-20 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-700 dark:via-indigo-700 dark:to-purple-700">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 animate-fade-in-up">
             Ready to Transform Your Grading Process?
           </h2>
-          <p className="text-base md:text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-blue-100 mb-8 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             Join educators who are saving hours every week with AI-powered grading
           </p>
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           {user ? (
             <Button
               size="lg"
-              className="bg-white text-blue-600 hover:bg-blue-50 px-8"
+              className="bg-white text-blue-600 hover:bg-blue-50 px-8 transition-all hover:scale-105"
               onClick={() => router.push("/dashboard")}
             >
               Go to Dashboard
@@ -357,13 +358,14 @@ export default function Home() {
           ) : (
             <Button
               size="lg"
-              className="bg-white text-blue-600 hover:bg-blue-50 px-8"
+              className="bg-white text-blue-600 hover:bg-blue-50 px-8 transition-all hover:scale-105"
               onClick={() => router.push("/signup")}
             >
               Start Grading for Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           )}
+          </div>
         </div>
       </section>
 
