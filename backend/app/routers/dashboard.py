@@ -38,7 +38,8 @@ async def get_dashboard_stats(
             "average_grade": 0.0,
             "total_students": 0,
             "credits": 0,
-            "subscription_status": "free"
+            "subscription_status": "free",
+            "current_plan": "Free"
         }
     
     # Count total exams for this user
@@ -53,13 +54,20 @@ async def get_dashboard_stats(
     exam_ids = [exam_id[0] for exam_id in user_exam_ids]
     
     if not exam_ids:
+        # Map subscription_status to readable plan name
+        plan_names = {
+            "free": "Free",
+            "pro": "Pro",
+            "enterprise": "Enterprise"
+        }
         return {
             "total_exams": 0,
             "total_submissions": 0,
             "average_grade": 0.0,
             "total_students": 0,
             "credits": user.credits,
-            "subscription_status": user.subscription_status.value
+            "subscription_status": user.subscription_status.value,
+            "current_plan": plan_names.get(user.subscription_status.value, "Free")
         }
     
     # Count total submissions for user's exams
@@ -98,11 +106,19 @@ async def get_dashboard_stats(
         Submission.exam_id.in_(exam_ids)
     ).scalar() or 0
     
+    # Map subscription_status to readable plan name
+    plan_names = {
+        "free": "Free",
+        "pro": "Pro",
+        "enterprise": "Enterprise"
+    }
+    
     return {
         "total_exams": total_exams,
         "total_submissions": total_submissions,
         "average_grade": round(average_grade, 2),
         "total_students": total_students,
         "credits": user.credits,
-        "subscription_status": user.subscription_status.value
+        "subscription_status": user.subscription_status.value,
+        "current_plan": plan_names.get(user.subscription_status.value, "Free")
     }

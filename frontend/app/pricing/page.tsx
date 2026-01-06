@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Loader2, Zap, Crown, Building2 } from "lucide-react";
@@ -74,7 +75,7 @@ export default function PricingPage() {
   const { user, loading } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const handleUpgrade = async (planId: string) => {
+  const handleUpgrade = async (planId: string, planName: string, price: number) => {
     if (loading || !user) {
       toast.error("Please sign in to upgrade");
       router.push("/login");
@@ -86,48 +87,16 @@ export default function PricingPage() {
       return;
     }
 
-    setLoadingPlan(planId);
-
-    try {
-      // Call backend to create checkout session
-      const response = await apiClient.post("/api/v1/payments/create", {
-        plan_type: planId,
-        gateway_choice: "safepay",
-        user_id: user.uid
-      });
-
-      const { checkout_url } = response.data;
-
-      // Redirect to Safepay checkout
-      toast.success("Redirecting to payment gateway...");
-      window.location.href = checkout_url;
-    } catch (error: any) {
-      console.error("Payment error:", error);
-      toast.error(
-        error.response?.data?.detail || "Failed to initiate payment. Please try again."
-      );
-      setLoadingPlan(null);
-    }
+    // Redirect to manual payment instructions page
+    router.push(`/payment/instructions?plan=${planName}&price=${price}`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      {/* Header */}
-      <header className="border-b border-zinc-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-              AI Exam Grader
-            </h1>
-            <Button variant="ghost" onClick={() => router.push("/dashboard")}>
-              Go to Dashboard
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:from-zinc-900 dark:to-black">
+      <Navbar />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-16">
+      <main className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
             Choose Your Plan
@@ -136,7 +105,7 @@ export default function PricingPage() {
             Upgrade to unlock more exams and advanced features
           </p>
           <p className="text-sm text-zinc-500 mt-2">
-            Pricing in Pakistani Rupees (PKR) • Secure payment via Safepay
+            Pricing in Pakistani Rupees (PKR) • Manual verification via EasyPaisa
           </p>
         </div>
 
@@ -197,7 +166,7 @@ export default function PricingPage() {
                 <Button
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
-                  onClick={() => handleUpgrade(plan.id)}
+                  onClick={() => handleUpgrade(plan.id, plan.name, plan.price)}
                   disabled={loadingPlan !== null}
                 >
                   {loadingPlan === plan.id ? (

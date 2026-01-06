@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, FileText, GraduationCap, TrendingUp, Crown, Loader2 } from "lucide-react";
+import { Navbar } from "@/components/navbar";
+import { PlusCircle, FileText, GraduationCap, TrendingUp, Loader2 } from "lucide-react";
 import { dashboardService } from "@/lib/api";
 
 export default function DashboardPage() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   // Fetch dashboard stats from backend
@@ -31,62 +32,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      {/* Header */}
-      <header className="border-b border-zinc-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-zinc-900 dark:text-zinc-50" />
-            <div>
-              <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-                AI Exam Grader
-              </h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Dashboard
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {stats && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full">
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Credits:
-                </span>
-                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-                  {stats.credits}
-                </span>
-              </div>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => router.push("/pricing")}
-              className="hidden md:flex"
-            >
-              <Crown className="mr-2 h-4 w-4" />
-              Upgrade to Pro
-            </Button>
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              {user?.email}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-            >
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:from-zinc-900 dark:to-black">
+      <Navbar />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
             Welcome back!
           </h2>
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             Grade exams with AI-powered handwriting recognition
           </p>
         </div>
