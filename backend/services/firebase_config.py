@@ -13,14 +13,10 @@ _db: Optional[firestore.Client] = None
 def initialize_firebase() -> firestore.Client:
     """
     Initialize Firebase Admin SDK and return Firestore client.
-    Works both locally (JSON file) and on Render (environment variables).
-    
-    Returns:
-        firestore.Client: Initialized Firestore database client
-        
-    Raises:
-        ValueError: If credentials not found
-        Exception: If Firebase initialization fails
+    Priority:
+    1. Render Secret File (/etc/secrets/...)
+    2. Render Env Variable (FIREBASE_CREDENTIALS_JSON)
+    3. Local File (*firebase*.json)
     """
     global _db
     
@@ -28,19 +24,41 @@ def initialize_firebase() -> firestore.Client:
         return _db
     
     try:
-        # Check if running on Render (environment variables set)
-        firebase_creds_json = os.getenv('FIREBASE_CREDENTIALS_JSON')
+        cred = None
+        project_id = None
         
-        if firebase_creds_json:
-            # Production: Use environment variable (Render)
-            print("🔧 Initializing Firebase from environment variables (Production)")
+        # --- STRATEGY 1: CHECK FOR RENDER SECRET FILES ---
+        # We check both names just in case you named it differently in the "Secret Files" menu
+        possible_render_paths = [
+            "/etc/secrets/firebase_credentials.json", 
+            "/etc/secrets/ai-professor-643e8-firebase-adminsdk-fbsvc-e1ebc9bdd6" 
+        ]
+        
+        found_secret_path = None
+        for path in possible_render_paths:
+            if os.path.exists(path):
+                found_secret_path = path
+                break
+        
+        if found_secret_path:
+            print(f"🔧 (Render) Initializing Firebase from Secret File: {found_secret_path}")
+            cred = credentials.Certificate(found_secret_path)
+            # Read the file to get the project_id for the bucket url
+            with open(found_secret_path, 'r') as f:
+                data = json.load(f)
+                project_id = data.get('project_id')
+
+        # --- STRATEGY 2: CHECK FOR ENV VARIABLE (Legacy Render Setup) ---
+        elif os.getenv('FIREBASE_CREDENTIALS_JSON'):
+            print("🔧 (Render) Initializing Firebase from environment variable string")
+            firebase_creds_json = os.getenv('FIREBASE_CREDENTIALS_JSON')
             service_account_data = json.loads(firebase_creds_json)
             cred = credentials.Certificate(service_account_data)
-            project_id = service_account_data.get('project_id', 'ai-professor-643e8')
-            
+            project_id = service_account_data.get('project_id')
+
+        # --- STRATEGY 3: LOCAL DEVELOPMENT (Your existing working code) ---
         else:
-            # Development: Use JSON file
-            print("🔧 Initializing Firebase from local JSON file (Development)")
+            print("🔧 (Local) Initializing Firebase from local JSON file")
             backend_dir = Path(__file__).parent.parent
             
             # Check for service account file
@@ -50,33 +68,30 @@ def initialize_firebase() -> firestore.Client:
                 raise ValueError(
                     "Firebase service account JSON not found. "
                     "For local dev: Place JSON in backend/ folder. "
-                    "For production: Set FIREBASE_CREDENTIALS_JSON environment variable."
                 )
             
             service_account_path = service_account_files[0]
-            
-            # Validate JSON structure
-            with open(service_account_path, 'r') as f:
-                service_account_data = json.load(f)
-                required_fields = ['project_id', 'private_key', 'client_email']
-                if not all(field in service_account_data for field in required_fields):
-                    raise ValueError(
-                        f"Invalid service account JSON. Missing required fields: {required_fields}"
-                    )
-            
             cred = credentials.Certificate(str(service_account_path))
-            project_id = service_account_data.get('project_id')
-        
-        # Initialize Firebase Admin SDK with Storage bucket
-        firebase_admin.initialize_app(cred, {
-            'storageBucket': f"{project_id}.appspot.com"
-        })
+            
+            # Get project_id from the local file
+            with open(service_account_path, 'r') as f:
+                data = json.load(f)
+                project_id = data.get('project_id')
+
+        # --- FINAL INITIALIZATION ---
+        # Avoid re-initializing if the app is already running
+        if not firebase_admin._apps:
+            print(f"🚀 Initializing new Firebase App for project: {project_id}")
+            firebase_admin.initialize_app(cred, {
+                'storageBucket': f"{project_id}.appspot.com"
+            })
+        else:
+             print("ℹ️ Firebase App already initialized, reusing.")
         
         # Get Firestore client
         _db = firestore.client()
         
-        print(f"✅ Firebase initialized successfully with project: {project_id}")
-        print(f"✅ Storage bucket: {project_id}.appspot.com")
+        print(f"✅ Firebase initialized successfully!")
         return _db
         
     except Exception as e:

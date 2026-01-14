@@ -20,7 +20,7 @@ class User(Base):
         default=SubscriptionStatus.FREE,
         nullable=False
     )
-    credits = Column(Integer, default=3, nullable=False)
+    credits = Column(Integer, default=5, nullable=False)
     
     # Payment Gateway IDs
     safepay_customer_id = Column(String, unique=True, nullable=True)
