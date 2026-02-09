@@ -44,10 +44,12 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-
+    # Pydantic v2 configuration: allow extra env vars (ignore unknown keys)
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False,
+        "extra": "ignore",
+    }
 
 @lru_cache()
 def get_settings() -> Settings:
