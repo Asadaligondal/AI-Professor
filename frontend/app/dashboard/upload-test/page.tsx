@@ -7,6 +7,10 @@ export default function UploadTestPage() {
   const [studentUrl, setStudentUrl] = useState<string | null>(null);
   const [answerUrl, setAnswerUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [examId, setExamId] = useState<string>("");
+  const [submissionId, setSubmissionId] = useState<string>("");
+  const [studentSaved, setStudentSaved] = useState(false);
+  const [answerSaved, setAnswerSaved] = useState(false);
 
   const upload = async (file: File, route: string, setter: (v: string) => void) => {
     setLoading(true);

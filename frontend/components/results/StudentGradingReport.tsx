@@ -93,7 +93,7 @@ export default function StudentGradingReport({ examId, submissionId }: Props) {
     return { question, idx, earned, max, pct, needs };
   });
 
-  const filtered = reviewFilter === 'needs' ? computed.filter((c) => c.needs) : computed;
+  const filtered = reviewFilter === 'needs' ? computed.filter((c: { needs: boolean }) => c.needs) : computed;
 
   return (
     <div className="grid gap-6 md:grid-cols-[320px_1fr]">
@@ -152,7 +152,7 @@ export default function StudentGradingReport({ examId, submissionId }: Props) {
             <Accordion type="single" collapsible value={openQuestionValue} onValueChange={(v) => setOpenQuestionValue(v)}>
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium mr-2">Question Summary</div>
-                {computed.map((c) => {
+                {computed.map((c: { idx: number; pct: number | null; needs: boolean; question: any; earned: number | null; max: number | null }) => {
                   const value = `q-${c.idx}`;
                   const status = c.pct === null ? 'N/A' : c.pct < 50 ? 'Needs Review' : 'OK';
                   return (
@@ -164,7 +164,7 @@ export default function StudentGradingReport({ examId, submissionId }: Props) {
               {filtered.length === 0 ? (
                 <div className="py-8 text-center text-zinc-500">No questions need review 🎉</div>
               ) : (
-                filtered.map((c) => {
+                filtered.map((c: { idx: number; pct: number | null; needs: boolean; question: any; earned: number | null; max: number | null }) => {
                   const question = c.question;
                   const qIdx = c.idx;
                   const hasRationale = question.rationale || (question.processed_answer && question.expected_answer);

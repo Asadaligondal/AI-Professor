@@ -520,7 +520,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                             <div className="flex items-center gap-2">
                               <Button size="sm" variant="ghost" onClick={() => { setOpenQuestionValue(undefined); console.log('Collapse all'); }}>Collapse all</Button>
                               <Button size="sm" variant="ghost" onClick={() => {
-                                const first = computed.find((c) => c.needs);
+                                const first = computed.find((c: { needs: boolean; idx: number }) => c.needs);
                                 if (first) {
                                   const val = `q-${first.idx}`;
                                   setOpenQuestionValue(val);
@@ -534,7 +534,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                             {/* Question Summary strip */}
                             <div className="mb-3 flex flex-wrap items-center gap-2">
                               <div className="text-sm font-medium mr-2">Question Summary</div>
-                              {computed.map((c) => {
+                              {computed.map((c: { idx: number; pct: number | null; needs: boolean; question: any; earned: number | null; max: number | null }) => {
                                 const value = `q-${c.idx}`;
                                 const status = c.pct === null ? 'N/A' : c.pct < 50 ? 'Needs Review' : 'OK';
                                 return (
@@ -559,7 +559,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                             {filtered.length === 0 ? (
                               <div className="py-8 text-center text-zinc-500">No questions need review 🎉</div>
                             ) : (
-                              filtered.map((c) => {
+                              filtered.map((c: { idx: number; pct: number | null; needs: boolean; question: any; earned: number | null; max: number | null }) => {
                                 const question = c.question;
                                 const qIdx = c.idx;
                                 const hasRationale = question.rationale || (question.processed_answer && question.expected_answer);

@@ -88,7 +88,7 @@ export default function NewExamPage() {
       // Save UploadThing URLs to Firestore
       if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "" && answerKeyUpload) {
         try {
-          await saveAnswerKeyFile(data.exam_id, answerKeyUpload);
+          await saveAnswerKeyFile(data.exam_id.toString(), answerKeyUpload);
           console.log("✅ Saved answer key URL:", answerKeyUpload.url);
           
           const submissions = await examService.getExamSubmissions(data.exam_id);
@@ -97,7 +97,7 @@ export default function NewExamPage() {
             const submission = submissions[i];
             const studentUpload = studentUploads[i];
             if (submission?.id && studentUpload) {
-              await saveStudentPaperFile(data.exam_id, submission.id.toString(), studentUpload);
+              await saveStudentPaperFile(data.exam_id.toString(), submission.id.toString(), studentUpload);
               console.log("✅ Saved student paper URL:", studentUpload.url);
             }
           }
