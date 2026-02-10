@@ -19,8 +19,12 @@ class StorageService:
             self.bucket = storage.bucket()
             logger.info(f"✅ Storage bucket initialized: {self.bucket.name}")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Storage bucket: {str(e)}")
-            logger.error("⚠️ Make sure Firebase Storage is enabled in your Firebase project")
+            error_msg = str(e).lower()
+            if "bucket does not exist" in error_msg or "not found" in error_msg:
+                logger.warning("⚠️ Firebase Storage bucket not configured - uploads disabled (using UploadThing)")
+            else:
+                logger.error(f"❌ Failed to initialize Storage bucket: {str(e)}")
+                logger.error("⚠️ Make sure Firebase Storage is enabled in your Firebase project")
             self.bucket = None
     
     def upload_file(
@@ -55,7 +59,11 @@ class StorageService:
             return blob.public_url
             
         except Exception as e:
-            logger.error(f"❌ Failed to upload file to {destination_path}: {str(e)}")
+            error_msg = str(e).lower()
+            if "bucket does not exist" in error_msg or "not found" in error_msg:
+                logger.warning(f"⚠️ Firebase Storage bucket not configured, skipping upload: {destination_path}")
+            else:
+                logger.error(f"❌ Failed to upload file to {destination_path}: {str(e)}")
             return ""
     
     def get_signed_url(self, blob_path: str, expiration_minutes: int = 60) -> str:

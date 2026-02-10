@@ -86,6 +86,8 @@ async def grade_exam(
         le=1.0,
         description="API temperature (lower = more consistent)"
     ),
+    answer_key_url: str | None = Form(default=None, description="Optional UploadThing URL for answer key"),
+    student_papers_urls: str | None = Form(default=None, description="Optional JSON array (string) of UploadThing URLs for student papers"),
     user: models.User = Depends(check_credits),  # Credit guard applied here
     db: Session = Depends(get_db),
     grading_service: AIGradingService = Depends(get_ai_grading_service)
@@ -145,11 +147,21 @@ async def grade_exam(
         # Read PDF files
         professor_key_bytes = await professor_key.read()
         student_papers_bytes = await student_papers.read()
-        
+
+        # Log file sizes
         logger.info(
             f"Files loaded - Professor key: {len(professor_key_bytes)} bytes, "
             f"Student papers: {len(student_papers_bytes)} bytes"
         )
+
+        # If frontend supplied UploadThing URLs, log start/completion markers
+        if answer_key_url or student_papers_urls:
+            logger.info("Starting UploadThing upload markers (frontend-provided URLs present)")
+            if answer_key_url:
+                logger.info(f"UploadThing answer key URL provided: {answer_key_url}")
+            if student_papers_urls:
+                logger.info(f"UploadThing student papers URLs provided: {student_papers_urls}")
+            logger.info("UploadThing upload completed (URLs were provided by frontend)")
         
         # Grade the exam using AI service
         try:

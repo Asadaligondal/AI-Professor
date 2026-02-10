@@ -42,7 +42,7 @@ class QuestionGrade(BaseModel):
 class StudentGradeResult(BaseModel):
     """Complete grade result for one student"""
     student_name: str
-    roll_no: str
+    roll_no: Optional[str] = "N/A"
     results: List[QuestionGrade]
     total_score: float
 
