@@ -22,7 +22,7 @@ import {
 import { examService } from "@/lib/api";
 import { Submission } from "@/types";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+// import * as XLSX from "xlsx"; // Removed due to security vulnerabilities
 import { QuestionDetailView } from "@/components/question-detail-view";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -301,8 +301,8 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     setHasChanges(true);
   };
 
-  // Export to Excel
-  const exportToExcel = () => {
+  // Export to CSV (replaced Excel due to security issues)
+  const exportToCSV = () => {
     const exportData = submissions.flatMap((sub) => {
       const questions = sub.grade_json?.results || [];
       return questions.map((q: any, idx: number) => ({
@@ -315,26 +315,27 @@ export default function ResultsPage({ params }: ResultsPageProps) {
       }));
     });
 
-    // Add summary sheet
-    const summaryData = submissions.map((sub) => ({
-      "Student Name": sub.student_name,
-      "Roll Number": sub.roll_number,
-      "Total Score": sub.total_score || 0,
-      "Status": sub.grade_status,
-      "Graded At": sub.graded_at
-        ? new Date(sub.graded_at).toLocaleString()
-        : "Not graded",
-    }));
+    // Create CSV content
+    const headers = ["Student Name", "Roll Number", "Question", "Marks Obtained", "Max Marks", "Feedback"];
+    const csvContent = [
+      headers.join(","),
+      ...exportData.map(row => 
+        headers.map(header => `"${String(row[header as keyof typeof row]).replace(/"/g, '""')}"`).join(",")
+      )
+    ].join("\n");
 
-    const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.json_to_sheet(summaryData);
-    const ws2 = XLSX.utils.json_to_sheet(exportData);
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exam?.title || "Exam"}_Results.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
     
-    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
-    XLSX.utils.book_append_sheet(wb, ws2, "Detailed Results");
-    
-    XLSX.writeFile(wb, `${exam?.title || "Exam"}_Results.xlsx`);
-    toast.success("Excel file downloaded!");
+    toast.success("CSV file downloaded!");
   };
 
   useEffect(() => {
@@ -374,12 +375,12 @@ export default function ResultsPage({ params }: ResultsPageProps) {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={exportToExcel}
+              onClick={exportToCSV}
               disabled={submissions.length === 0}
               size="sm"
             >
               <Download className="mr-2 h-4 w-4" />
-              Download Excel
+              Download CSV
             </Button>
             <Button
               onClick={() => saveMutation.mutate()}
