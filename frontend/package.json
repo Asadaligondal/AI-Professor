@@ -32,6 +32,9 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "xlsx": "^0.18.5"
+    ,
+    "uploadthing": "latest",
+    "@uploadthing/react": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

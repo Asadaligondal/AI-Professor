@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, FileText, Users, PlusCircle, Loader2, Eye } from "lucide-react";
 import { examService } from "@/lib/api";
+import { AppShell } from "@/components/layout/AppShell";
 
 export default function ExamsListPage() {
   const router = useRouter();
@@ -31,34 +32,27 @@ export default function ExamsListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      {/* Header */}
-      <header className="border-b border-zinc-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/dashboard")}
-            className="mb-2"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                Your Exams
-              </h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {exams?.length || 0} exam{exams?.length !== 1 ? "s" : ""} created
-              </p>
-            </div>
-            <Button onClick={() => router.push("/dashboard/new-exam")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Exam
-            </Button>
-          </div>
+    <AppShell pageTitle="Your Exams">
+      <Button
+        variant="ghost"
+        onClick={() => router.push("/dashboard")}
+        className="mb-6"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Dashboard
+      </Button>
+
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {exams?.length || 0} exam{exams?.length !== 1 ? "s" : ""} created
+          </p>
         </div>
-      </header>
+        <Button onClick={() => router.push("/dashboard/new-exam")}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          New Exam
+        </Button>
+      </div>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -130,6 +124,6 @@ export default function ExamsListPage() {
           </div>
         )}
       </main>
-    </div>
+    </AppShell>
   );
 }

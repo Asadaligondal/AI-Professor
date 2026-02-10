@@ -1,19 +1,30 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Download, Save, Loader2, CheckCircle2, Eye } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { ArrowLeft, Download, Save, Loader2, CheckCircle2, Eye, FileText, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { examService } from "@/lib/api";
 import { Submission } from "@/types";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { QuestionDetailView } from "@/components/question-detail-view";
+import { AppShell } from "@/components/layout/AppShell";
 
 interface ResultsPageProps {
   params: Promise<{
@@ -31,6 +42,10 @@ export default function ResultsPage({ params }: ResultsPageProps) {
   
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [openQuestionValue, setOpenQuestionValue] = useState<string | undefined>(undefined);
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'needs'>('all');
 
   // Fetch exam details
   const { data: exam, isLoading: examLoading } = useQuery({
@@ -58,6 +73,110 @@ export default function ResultsPage({ params }: ResultsPageProps) {
       }
     }
   }, [fetchedSubmissions, studentId]);
+
+  useEffect(() => {
+    console.log("Results Scan Mode v1 mounted");
+  }, []);
+
+  useEffect(() => {
+    console.log("Results Summary v1 mounted");
+  }, []);
+  const filteredSubmissions = useMemo(() => {
+    if (!searchQuery) return submissions;
+    const q = searchQuery.toLowerCase().trim();
+    return submissions.filter((s) => {
+      return (
+        (s.student_name || "").toLowerCase().includes(q) ||
+        (s.roll_number || "").toLowerCase().includes(q)
+      );
+    });
+  }, [submissions, searchQuery]);
+
+  // Default selection: pick the first submission (or keep studentId if provided)
+  useEffect(() => {
+    if (submissions && submissions.length > 0) {
+      if (studentId) {
+        setSelectedStudentId(String(studentId));
+      } else if (!selectedStudentId) {
+        setSelectedStudentId(String(submissions[0].id));
+      }
+    }
+  }, [submissions, studentId, selectedStudentId]);
+
+  const selectedSubmission = useMemo(() => {
+    if (!selectedStudentId) return null;
+    return submissions.find((s) => String(s.id) === String(selectedStudentId)) || null;
+  }, [submissions, selectedStudentId]);
+
+  const getSubmissionScore = (sub: Submission) => {
+    const questions = sub.grade_json?.results || [];
+    const maxScore = questions.reduce((sum: number, q: any) => sum + (q.max_marks || 0), 0);
+    const obtained = sub.total_score || questions.reduce((sum: number, q: any) => sum + (q.marks_obtained || 0), 0);
+    const pct = maxScore > 0 ? (obtained / maxScore) * 100 : 0;
+    return { obtained, maxScore, pct };
+  };
+
+  // Safe percent helper: returns number in 0-100 or null when denominator is zero/invalid
+  const safePercent = (numerator: number | null | undefined, denominator: number | null | undefined): number | null => {
+    if (!denominator || denominator === 0) return null;
+    const n = Number(numerator) || 0;
+    const d = Number(denominator) || 0;
+    if (d === 0) return null;
+    const pct = (n / d) * 100;
+    if (!Number.isFinite(pct)) return null;
+    return Math.round(pct * 10) / 10; // 1 decimal place
+  };
+
+  const alignmentToPct = (raw: any) => {
+    if (raw === null || raw === undefined) return null;
+    const num = Number(raw);
+    if (!Number.isFinite(num)) return null;
+    if (num > 0 && num <= 1) return safePercent(num, 1);
+    if (num >= 0 && num <= 100) return safePercent(num, 100);
+    return null;
+  };
+
+  // Parse earned/max from question object. Supports marks fields or score text like "0.5 / 1".
+  const parseScore = (question: any) => {
+    let earned: number | null = null;
+    let max: number | null = null;
+    if (question.marks_obtained !== undefined && question.marks_obtained !== null) {
+      earned = Number(question.marks_obtained) || 0;
+    }
+    if (question.max_marks !== undefined && question.max_marks !== null) {
+      max = Number(question.max_marks) || 0;
+    }
+    // fallback: parse score_text or score
+    const scoreText = question.score_text || question.score || question.scoreText || null;
+    if ((earned === null || max === null) && scoreText && typeof scoreText === 'string') {
+      const m = scoreText.match(/([0-9]*\.?[0-9]+)\s*\/\s*([0-9]*\.?[0-9]+)/);
+      if (m) {
+        if (earned === null) earned = Number(m[1]) || 0;
+        if (max === null) max = Number(m[2]) || 0;
+      }
+    }
+    return { earned, max };
+  };
+
+  const needsReview = (earned: number | null, max: number | null) => {
+    const pct = safePercent(earned ?? null, max ?? null);
+    if (pct !== null && pct < 50) return true;
+    if ((earned ?? 0) === 0) return true;
+    return false;
+  };
+
+  // KPI calculations
+  const studentsGraded = submissions.length;
+  const scores = submissions.map((sub) => {
+    const questions = sub.grade_json?.results || [];
+    const maxScore = questions.reduce((sum: number, q: any) => sum + (q.max_marks || 0), 0);
+    const obtained = sub.total_score || questions.reduce((sum: number, q: any) => sum + (q.marks_obtained || 0), 0);
+    const pct = maxScore > 0 ? (obtained / maxScore) * 100 : 0;
+    return { pct, obtained, maxScore };
+  });
+  const averageScore = scores.length > 0 ? (scores.reduce((s, x) => s + x.pct, 0) / scores.length) : null;
+  const highestScore = scores.length > 0 ? Math.max(...scores.map((s) => s.pct)) : null;
+  const flaggedCount = 0;
 
   // Save mutation for batch updates
   const saveMutation = useMutation({
@@ -218,203 +337,291 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     toast.success("Excel file downloaded!");
   };
 
+  useEffect(() => {
+    console.log("UX Clarity Pass v1");
+  }, []);
+
   if (examLoading || submissionsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-      </div>
+      <AppShell pageTitle="Exam Results">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      {/* Header */}
-      <header className="border-b border-zinc-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => studentId ? router.push(`/exams/${examId}`) : router.push("/dashboard")}
-            className="mb-2"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {studentId ? "Back to All Students" : "Back to Dashboard"}
-          </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                {exam?.title || "Exam Results"}
-                {studentId && submissions[0] && (
-                  <span className="text-lg font-normal text-zinc-600 dark:text-zinc-400 ml-2">
-                    - {submissions[0].student_name}
-                  </span>
-                )}
-              </h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {studentId 
-                  ? `Detailed analysis for ${submissions[0]?.student_name || "student"}`
-                  : `${submissions.length} student${submissions.length !== 1 ? "s" : ""} graded`
-                }
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {studentId && (
-                <Button
-                  variant="outline"
-                  onClick={() => router.push(`/dashboard/exams/${examId}/review/${studentId}`)}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Paper
-                </Button>
+    <AppShell pageTitle={`Exam Results`}>
+      <div className="mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => studentId ? router.push(`/exams/${examId}`) : router.push("/dashboard")}
+          className="mb-2"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {studentId ? "Back to All Students" : "Back to Dashboard"}
+        </Button>
+
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Exam Results</h1>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Manage submissions for this exam. Use Paper for scan comparison and Grading Report for detailed marking.
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{studentId ? `Detailed analysis for ${submissions[0]?.student_name || "student"}` : `${submissions.length} student${submissions.length !== 1 ? "s" : ""} graded`}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={exportToExcel}
+              disabled={submissions.length === 0}
+              size="sm"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Excel
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!hasChanges || saveMutation.isPending}
+              size="sm"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
               )}
-              <Button
-                variant="outline"
-                onClick={exportToExcel}
-                disabled={submissions.length === 0}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Excel
-              </Button>
-              <Button
-                onClick={() => saveMutation.mutate()}
-                disabled={!hasChanges || saveMutation.isPending}
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                {hasChanges ? "Save Changes" : "No Changes"}
-              </Button>
-            </div>
+              {hasChanges ? "Save Changes" : "No Changes"}
+            </Button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {submissions.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-zinc-500">No submissions found for this exam.</p>
+      {submissions.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-zinc-500">No submissions found for this exam.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-[320px_1fr]">
+          {/* Left: Students list (sticky) */}
+          <Card className="max-h-[70vh] overflow-auto">
+            <CardHeader className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-sm">Students</CardTitle>
+                <Badge variant="secondary">Scan Mode v1</Badge>
+              </div>
+              <div className="text-sm text-zinc-500">{submissions.length}</div>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="space-y-2 sticky top-20">
+                {submissions.map((s) => {
+                  const { obtained, maxScore, pct } = getSubmissionScore(s);
+                  const low = pct < 50;
+                  const isSelected = String(s.id) === String(selectedStudentId);
+                  return (
+                    <div
+                      key={s.id}
+                      className={`w-full rounded-md px-3 py-2 flex items-center justify-between gap-3 ${isSelected ? 'bg-zinc-100 dark:bg-zinc-900' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+                    >
+                      <div className="flex-1 cursor-pointer" onClick={() => setSelectedStudentId(String(s.id))}>
+                        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{s.student_name}</div>
+                        <div className="text-xs text-zinc-500">{s.roll_number || ""}</div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-sm font-semibold">{obtained} / {maxScore}</div>
+                          <div className="text-xs text-zinc-500">{pct.toFixed(1)}%</div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" aria-label="More">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => { console.log("Open paper", s.id); router.push(`/dashboard/results/${examId}/students/${s.id}?tab=paper`); }}>
+                                Paper (Side-by-Side)
+                                <div className="text-xs text-zinc-500 mt-1">Student scan vs answer key</div>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => { console.log("Open report", s.id); router.push(`/dashboard/results/${examId}/students/${s.id}?tab=report`); }}>
+                                Grading Report
+                                <div className="text-xs text-zinc-500 mt-1">Per-question scores + rationale</div>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-6">
-            {submissions.map((submission) => {
-              const questions = submission.grade_json?.results || [];
-              const maxScore = questions.reduce(
-                (sum: number, q: any) => sum + (q.max_marks || 0),
-                0
-              );
-              const percentage = maxScore > 0
-                ? ((submission.total_score || 0) / maxScore) * 100
-                : 0;
 
-              return (
-                <Card key={submission.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>{submission.student_name}</CardTitle>
-                        <CardDescription>
-                          Roll No: {submission.roll_number}
-                        </CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                          {submission.total_score || 0} / {maxScore}
-                        </div>
-                        <div className="text-sm text-zinc-500">
-                          {percentage.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {questions.map((question: any, qIdx: number) => {
-                        // Check if this question has the new explainable reasoning structure
-                        const hasRationale = question.rationale || 
-                          (question.processed_answer && question.expected_answer);
+          {/* Right: Selected student details */}
+          <Card className="p-4">
+            <CardHeader className="p-0 mb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">{selectedSubmission?.student_name || 'Select a student'}</h2>
+                  <div className="text-sm text-zinc-500">{selectedSubmission?.roll_number || ''}</div>
+                </div>
+                <div className="text-right">
+                  {selectedSubmission && (
+                    (() => {
+                      const sc = getSubmissionScore(selectedSubmission);
+                      return (
+                        <>
+                          <div className="text-lg font-bold">{sc.obtained} / {sc.maxScore}</div>
+                          <div className="text-sm text-zinc-500">{sc.pct.toFixed(1)}%</div>
+                        </>
+                      );
+                    })()
+                  )}
+                </div>
+              </div>
+            </CardHeader>
 
-                        if (hasRationale) {
-                          // Render the detailed explainable reasoning view
-                          return (
-                            <div key={qIdx} className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
-                              <QuestionDetailView 
-                                question={question} 
-                                questionIndex={qIdx}
-                              />
-                            </div>
-                          );
-                        }
+            <CardContent className="p-0">
+              {selectedSubmission ? (
+                <div className="space-y-4">
+                  {/* Prepare computed questions and filtering */}
+                  {
+                    (() => {
+                      const allQs = selectedSubmission.grade_json?.results || [];
+                      const computed = allQs.map((question: any, idx: number) => {
+                        const { earned, max } = parseScore(question);
+                        const pct = safePercent(earned ?? null, max ?? null);
+                        const needs = needsReview(earned ?? null, max ?? null);
+                        return { question, idx, earned, max, pct, needs };
+                      });
 
-                        // Fallback to the old simple view for questions without rationale
-                        return (
-                          <div
-                            key={qIdx}
-                            className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 space-y-3"
-                          >
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-zinc-900 dark:text-zinc-50">
-                                Question {qIdx + 1}
-                              </h4>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-zinc-500">Marks:</span>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  max={question.max_marks || 100}
-                                  step="0.5"
-                                  value={question.marks_obtained || 0}
-                                  onChange={(e) =>
-                                    updateQuestionMarks(
-                                      submission.id,
-                                      qIdx,
-                                      parseFloat(e.target.value) || 0
-                                    )
-                                  }
-                                  className="w-20 text-center"
-                                />
-                                <span className="text-sm text-zinc-500">
-                                  / {question.max_marks || 0}
-                                </span>
+                      const filtered = reviewFilter === 'needs' ? computed.filter((c: { needs: boolean }) => c.needs) : computed;
+
+                      // Review Controls row
+                      return (
+                        <>
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium">Review Controls</div>
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" variant={reviewFilter === 'all' ? 'default' : 'outline'} onClick={() => setReviewFilter('all')}>All</Button>
+                                <Button size="sm" variant={reviewFilter === 'needs' ? 'default' : 'outline'} onClick={() => setReviewFilter('needs')}>Needs Review</Button>
                               </div>
                             </div>
-
-                            {question.student_answer && (
-                              <div className="text-sm">
-                                <p className="text-zinc-500 mb-1">Student Answer:</p>
-                                <p className="text-zinc-700 dark:text-zinc-300">
-                                  {question.student_answer}
-                                </p>
-                              </div>
-                            )}
-
-                            <div>
-                              <label className="text-sm text-zinc-500 mb-1 block">
-                                Feedback:
-                              </label>
-                              <Textarea
-                                value={question.feedback || ""}
-                                onChange={(e) =>
-                                  updateFeedback(submission.id, qIdx, e.target.value)
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => { setOpenQuestionValue(undefined); console.log('Collapse all'); }}>Collapse all</Button>
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                const first = computed.find((c) => c.needs);
+                                if (first) {
+                                  const val = `q-${first.idx}`;
+                                  setOpenQuestionValue(val);
+                                  setTimeout(() => document.getElementById(val)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
                                 }
-                                placeholder="Add feedback for this question..."
-                                rows={2}
-                              />
+                              }}>Open first Needs Review</Button>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </main>
-    </div>
+
+                          <Accordion type="single" collapsible value={openQuestionValue} onValueChange={(v) => setOpenQuestionValue(v)}>
+                            {/* Question Summary strip */}
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <div className="text-sm font-medium mr-2">Question Summary</div>
+                              {computed.map((c) => {
+                                const value = `q-${c.idx}`;
+                                const status = c.pct === null ? 'N/A' : c.pct < 50 ? 'Needs Review' : 'OK';
+                                return (
+                                  <Button
+                                    key={value}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="rounded-full px-3 py-1 border text-xs flex items-center gap-2"
+                                    onClick={() => {
+                                      setOpenQuestionValue(value);
+                                      setTimeout(() => document.getElementById(value)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+                                    }}
+                                  >
+                                    <span className="font-medium">Q{c.idx + 1}</span>
+                                    <span className="text-xs text-zinc-500">· {c.pct === null ? '—' : `${c.pct}%`}</span>
+                                    <Badge variant="secondary" className="ml-2">{status}</Badge>
+                                  </Button>
+                                );
+                              })}
+                            </div>
+
+                            {filtered.length === 0 ? (
+                              <div className="py-8 text-center text-zinc-500">No questions need review 🎉</div>
+                            ) : (
+                              filtered.map((c) => {
+                                const question = c.question;
+                                const qIdx = c.idx;
+                                const hasRationale = question.rationale || (question.processed_answer && question.expected_answer);
+                                const marks = question.marks_obtained || 0;
+                                const max = question.max_marks || 0;
+                                const alignmentRaw = question.concept_alignment || question.concept_score || null;
+                                const alignmentPct = alignmentToPct(alignmentRaw);
+                                const value = `q-${qIdx}`;
+
+                                return (
+                                  <AccordionItem id={value} value={value} key={qIdx}>
+                                    <AccordionTrigger className="px-3 py-2.5">
+                                      <div className="flex items-center justify-between w-full">
+                                        <div className="text-sm font-medium">Question {qIdx + 1}</div>
+                                        <div className="flex items-center gap-3" style={{ minWidth: 110 }}>
+                                          <div className="text-sm">{c.earned ?? '—'} / {c.max ?? '—'}</div>
+                                          <Badge variant="outline">{c.pct === null ? '—' : `${c.pct}%`}</Badge>
+                                        </div>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-3">
+                                      {hasRationale ? (
+                                        <div className="pb-2">
+                                          <QuestionDetailView question={question} questionIndex={qIdx} />
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-3 pb-2">
+                                          {question.student_answer && (
+                                            <div className="text-sm">
+                                              <p className="text-zinc-500 mb-1">Student Answer:</p>
+                                              <p className="text-zinc-700 dark:text-zinc-300">{question.student_answer}</p>
+                                            </div>
+                                          )}
+
+                                          <div>
+                                            <label className="text-sm text-zinc-500 mb-1 block">Feedback:</label>
+                                            <Textarea
+                                              value={question.feedback || ""}
+                                              onChange={(e) => updateFeedback(selectedSubmission.id, qIdx, e.target.value)}
+                                              placeholder="Add feedback for this question..."
+                                              rows={2}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                );
+                              })
+                            )}
+                          </Accordion>
+                        </>
+                      );
+                    })()
+                  }
+                </div>
+              ) : (
+                <div className="py-8 text-center text-zinc-500">Select a student to view details</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </AppShell>
   );
 }

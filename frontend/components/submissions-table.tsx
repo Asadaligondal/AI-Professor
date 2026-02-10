@@ -114,25 +114,38 @@ export function SubmissionsTable({ submissions, examId, exam }: SubmissionsTable
         
         return (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                router.push(`/dashboard/exams/${examId}/review/${submission.id}`);
-              }}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              View Paper
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                router.push(`/dashboard/results/${examId}?studentId=${submission.id}`);
-              }}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              View Report
-            </Button>
+            <div className="flex flex-col items-start">
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    router.push(`/dashboard/results/${examId}/students/${submission.id}?tab=paper`);
+                  }}
+                  title="Student scan vs answer key"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Paper
+                </Button>
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Student scan vs answer key</div>
+            </div>
+
+            <div className="flex flex-col items-start">
+              <div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    router.push(`/dashboard/results/${examId}/students/${submission.id}?tab=report`);
+                  }}
+                  title="Per-question scores + rationale"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Grading Report
+                </Button>
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Per-question scores + rationale</div>
+            </div>
           </div>
         );
       },
