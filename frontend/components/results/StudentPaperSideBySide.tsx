@@ -16,8 +16,8 @@ export default function StudentPaperSideBySide({ examId, submissionId }: Props) 
   const { data: studentFile, isLoading: loadingStudent } = useQuery({ queryKey: ["studentPaperFile", examId, submissionId], queryFn: () => getStudentPaperFile(examId, submissionId), enabled: !!examId && !!submissionId });
 
   useEffect(() => {
-    console.log("StudentPaperSideBySide mounted");
-  }, []);
+    console.log("📄 Paper tab:", { answerKeyFile, studentFile });
+  }, [answerKeyFile, studentFile]);
 
   const studentPdf = studentFile?.url || null;
   const answerKey = answerKeyFile?.url || null;

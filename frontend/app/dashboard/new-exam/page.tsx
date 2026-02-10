@@ -12,8 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Upload, Loader2, CheckCircle2, FileText, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
-import { createExam, createSubmission } from "@/lib/firestore-client";
-import { gradingService } from "@/lib/api";
+import { saveAnswerKeyFile, saveStudentPaperFile } from "@/lib/firestore-client";
+import { gradingService, examService } from "@/lib/api";
 import { useUploadThing } from "@/lib/uploadthing";
 
 export default function NewExamPage() {
@@ -77,13 +77,34 @@ export default function NewExamPage() {
       }
       return gradingService.gradeExam(formData, user.uid, setUploadProgress);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(
         `Successfully graded ${data.students_graded} student(s)!`
       );
       
       console.log("Grading response:", data);
       console.log("Exam ID:", data.exam_id);
+      
+      // Save UploadThing URLs to Firestore
+      if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "" && answerKeyUpload) {
+        try {
+          await saveAnswerKeyFile(data.exam_id, answerKeyUpload);
+          console.log("✅ Saved answer key URL:", answerKeyUpload.url);
+          
+          const submissions = await examService.getExamSubmissions(data.exam_id);
+          
+          for (let i = 0; i < Math.min(submissions.length, studentUploads.length); i++) {
+            const submission = submissions[i];
+            const studentUpload = studentUploads[i];
+            if (submission?.id && studentUpload) {
+              await saveStudentPaperFile(data.exam_id, submission.id.toString(), studentUpload);
+              console.log("✅ Saved student paper URL:", studentUpload.url);
+            }
+          }
+        } catch (err) {
+          console.error("❌ Failed to save URLs:", err);
+        }
+      }
       
       if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "") {
         console.log("Redirecting to:", `/dashboard/results/${data.exam_id}`);
@@ -136,26 +157,9 @@ export default function NewExamPage() {
 
     try {
       setUploading(true);
-      
-      // Save UploadThing URLs to Firestore for Paper (Side-by-Side) viewer
-      const examId = await createExam({
-        title: examTitle,
-        description: examDescription,
-        marksPerQuestion: parseFloat(marksPerQuestion) || 1.0,
-        ownerId: user.uid,
-        answerKeyFile: answerKeyUpload,
-      });
-      console.log("Created Firestore exam:", examId);
-      console.log("Saved answerKeyFile to Firestore");
+      console.log("🚀 Starting grading with UploadThing URLs:", { answerKeyUpload, studentUploads });
 
-      let submissionCount = 0;
-      for (const s of studentUploads) {
-        await createSubmission(examId, { studentPaperFile: s, status: "uploaded" });
-        submissionCount++;
-      }
-      console.log("Saved UploadThing URLs to Firestore", { examId, submissionCount });
-
-      // Main grading flow: call backend with original files
+      // Call backend grading with original files
       const formData = new FormData();
       formData.append("professor_key", professorKey);
       studentFiles.forEach(file => {
