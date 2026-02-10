@@ -139,7 +139,7 @@ export default function StudentGradingReport({ examId, submissionId }: Props) {
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="ghost" onClick={() => { setOpenQuestionValue(undefined); }}>Collapse all</Button>
                 <Button size="sm" variant="ghost" onClick={() => {
-                  const first = computed.find((c) => c.needs);
+                  const first = computed.find((c: { needs: boolean; idx: number }) => c.needs);
                   if (first) {
                     const val = `q-${first.idx}`;
                     setOpenQuestionValue(val);
