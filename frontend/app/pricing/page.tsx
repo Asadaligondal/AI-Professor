@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navbar } from "@/components/navbar";
+import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Loader2, Zap, Crown, Building2 } from "lucide-react";
@@ -92,124 +92,70 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:from-zinc-900 dark:to-black">
-      <Navbar />
+    <AppShell pageTitle="Pricing">
+      <div className="min-h-screen bg-gray-50 dark:from-zinc-900 dark:to-black">
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-12">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">Choose Your Plan</h2>
+            <p className="text-xl text-zinc-600 dark:text-zinc-400">Upgrade to unlock more exams and advanced features</p>
+            <p className="text-sm text-zinc-500 mt-2">Pricing in Pakistani Rupees (PKR) • Manual verification via EasyPaisa</p>
+          </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
-            Choose Your Plan
-          </h2>
-          <p className="text-xl text-zinc-600 dark:text-zinc-400">
-            Upgrade to unlock more exams and advanced features
-          </p>
-          <p className="text-sm text-zinc-500 mt-2">
-            Pricing in Pakistani Rupees (PKR) • Manual verification via EasyPaisa
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`relative ${
-                plan.popular
-                  ? "border-2 border-blue-500 shadow-lg"
-                  : "border-zinc-200 dark:border-zinc-800"
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                    Most Popular
-                  </span>
-                </div>
-              )}
-
-              <CardHeader>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
-                    {plan.icon}
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {plans.map((plan) => (
+              <Card
+                key={plan.id}
+                className={`relative ${plan.popular ? "border-2 border-blue-500 shadow-lg" : "border-zinc-200 dark:border-zinc-800"}`}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
                   </div>
-                  {plan.popular && (
-                    <Crown className="h-5 w-5 text-yellow-500" />
-                  )}
-                </div>
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <CardDescription className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mt-4">
-                  {plan.price === 0 ? (
-                    "Free"
-                  ) : (
-                    <>
-                      {plan.currency} {plan.price.toLocaleString()}
-                      <span className="text-sm font-normal text-zinc-500">/month</span>
-                    </>
-                  )}
-                </CardDescription>
-              </CardHeader>
+                )}
 
-              <CardContent>
-                <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">{plan.icon}</div>
+                    {plan.popular && <Crown className="h-5 w-5 text-yellow-500" />}
+                  </div>
+                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <CardDescription className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mt-4">
+                    {plan.price === 0 ? "Free" : <>{plan.currency} {plan.price.toLocaleString()}<span className="text-sm font-normal text-zinc-500">/month</span></>}
+                  </CardDescription>
+                </CardHeader>
 
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={plan.popular ? "default" : "outline"}
-                  onClick={() => handleUpgrade(plan.id, plan.name, plan.price)}
-                  disabled={loadingPlan !== null}
-                >
-                  {loadingPlan === plan.id ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : plan.id === "free" ? (
-                    "Current Plan"
-                  ) : (
-                    "Upgrade Now"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-sm text-zinc-600 dark:text-zinc-400">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
 
-        {/* Payment Info */}
-        <div className="mt-16 text-center max-w-3xl mx-auto">
-          <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-            Secure Payment with Safepay
-          </h3>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-            We use Safepay, Pakistan's leading payment gateway, to ensure your transactions are safe and secure. 
-            Pay with your debit/credit card or bank account.
-          </p>
-          <div className="flex items-center justify-center gap-6 text-sm text-zinc-500">
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-green-500" />
-              <span>SSL Encrypted</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-green-500" />
-              <span>PCI Compliant</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-green-500" />
-              <span>Money Back Guarantee</span>
+                <CardFooter>
+                  <Button className="w-full" variant={plan.popular ? "default" : "outline"} onClick={() => handleUpgrade(plan.id, plan.name, plan.price)} disabled={loadingPlan !== null}>
+                    {loadingPlan === plan.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : plan.id === "free" ? "Current Plan" : "Upgrade Now"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+
+          {/* Payment Info */}
+          <div className="mt-16 text-center max-w-3xl mx-auto">
+            <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">Secure Payment with Safepay</h3>
+            <p className="text-zinc-600 dark:text-zinc-400 mb-6">We use Safepay, Pakistan's leading payment gateway, to ensure your transactions are safe and secure. Pay with your debit/credit card or bank account.</p>
+            <div className="flex items-center justify-center gap-6 text-sm text-zinc-500">
+              <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /><span>SSL Encrypted</span></div>
+              <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /><span>PCI Compliant</span></div>
+              <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /><span>Money Back Guarantee</span></div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AppShell>
   );
 }

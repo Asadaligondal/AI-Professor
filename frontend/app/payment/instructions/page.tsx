@@ -62,7 +62,7 @@ function PaymentInstructionsContent() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/pricing")}
+            onClick={() => router.push("/dashboard/billing")}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />

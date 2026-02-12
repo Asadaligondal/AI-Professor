@@ -65,7 +65,7 @@ function PaymentCancelledContent() {
           <div className="flex flex-col gap-3">
             <Button
               className="w-full"
-              onClick={() => router.push("/pricing")}
+              onClick={() => router.push("/dashboard/billing")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Try Again

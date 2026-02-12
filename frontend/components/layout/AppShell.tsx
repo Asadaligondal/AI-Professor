@@ -147,9 +147,7 @@ export function AppShell({ children, pageTitle = "Dashboard" }: AppShellProps) {
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {pageTitle}
               </h1>
-              <Badge variant="secondary" className="text-xs">
-                UI Shell v1
-              </Badge>
+              <Badge variant="secondary" className="text-xs"></Badge>
             </div>
 
             {/* Search and User Menu */}
