@@ -20,6 +20,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { examService } from "@/lib/api";
+import getQuestionMax from "@/lib/rubric/getQuestionMax";
+import ensureRubricIndex from "@/lib/rubric/ensureRubricIndex";
 import { Submission } from "@/types";
 import { toast } from "sonner";
 // import * as XLSX from "xlsx"; // Removed due to security vulnerabilities
@@ -52,6 +54,14 @@ export default function ResultsPage({ params }: ResultsPageProps) {
     queryKey: ["exam", examId],
     queryFn: () => examService.getExam(examId),
   });
+
+  // Build rubric lookup map for quick qNo -> marks queries
+  const marksByQNo = useMemo(() => {
+    const map = ensureRubricIndex((exam as any)?.rubric);
+    console.log("Rubric marksByQNo", map);
+    console.log("Raw exam.rubric", (exam as any)?.rubric);
+    return map;
+  }, [exam]);
 
   // Fetch submissions
   const { data: fetchedSubmissions, isLoading: submissionsLoading } = useQuery({
@@ -110,7 +120,14 @@ export default function ResultsPage({ params }: ResultsPageProps) {
 
   const getSubmissionScore = (sub: Submission) => {
     const questions = sub.grade_json?.results || [];
-    const maxScore = questions.reduce((sum: number, q: any) => sum + (q.max_marks || 0), 0);
+    const maxScore = questions.reduce((sum: number, q: any, idx: number) => {
+      const qNo = Number(q.qNo ?? (idx + 1));
+      // Prefer rubric lookup first
+      const rubricMax = marksByQNo.get(qNo);
+      const respMax = Number(q.max_marks ?? q.max ?? NaN);
+      const max = rubricMax || ((!Number.isNaN(respMax) && respMax > 0) ? respMax : 1);
+      return sum + (max || 0);
+    }, 0);
     const obtained = sub.total_score || questions.reduce((sum: number, q: any) => sum + (q.marks_obtained || 0), 0);
     const pct = maxScore > 0 ? (obtained / maxScore) * 100 : 0;
     return { obtained, maxScore, pct };
@@ -169,7 +186,14 @@ export default function ResultsPage({ params }: ResultsPageProps) {
   const studentsGraded = submissions.length;
   const scores = submissions.map((sub) => {
     const questions = sub.grade_json?.results || [];
-    const maxScore = questions.reduce((sum: number, q: any) => sum + (q.max_marks || 0), 0);
+    const maxScore = questions.reduce((sum: number, q: any, idx: number) => {
+      const qNo = Number(q.qNo ?? (idx + 1));
+      // Prefer rubric lookup first
+      const rubricMax = marksByQNo.get(qNo);
+      const respMax = Number(q.max_marks ?? q.max ?? NaN);
+      const max = rubricMax || ((!Number.isNaN(respMax) && respMax > 0) ? respMax : 1);
+      return sum + (max || 0);
+    }, 0);
     const obtained = sub.total_score || questions.reduce((sum: number, q: any) => sum + (q.marks_obtained || 0), 0);
     const pct = maxScore > 0 ? (obtained / maxScore) * 100 : 0;
     return { pct, obtained, maxScore };
@@ -367,6 +391,11 @@ export default function ResultsPage({ params }: ResultsPageProps) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Exam Results</h1>
+            {submissions.some(s => (s.grade_json?.results || []).some((q: any) => q.breakdown)) && (
+              <div className="mt-2 inline-flex items-center gap-2">
+                <Badge variant="secondary">Rubric Applied ✅</Badge>
+              </div>
+            )}
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               Manage submissions for this exam. Use Paper for scan comparison and Grading Report for detailed marking.
             </p>
@@ -498,10 +527,16 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                     (() => {
                       const allQs = selectedSubmission.grade_json?.results || [];
                       const computed = allQs.map((question: any, idx: number) => {
-                        const { earned, max } = parseScore(question);
-                        const pct = safePercent(earned ?? null, max ?? null);
+                        const qNo = Number(question.qNo ?? (idx + 1));
+                        const { earned } = parseScore(question);
+                        // Prefer rubric lookup first, then explicit max in saved result, then fallback to 1
+                        const rubricMax = marksByQNo.get(qNo);
+                        const respMax = Number(question.max_marks ?? question.max ?? NaN);
+                        const max = rubricMax || ((!Number.isNaN(respMax) && respMax > 0) ? respMax : 1);
+                        console.log(`Q${qNo}: earned=${earned}, rubricMax=${rubricMax}, respMax=${respMax}, finalMax=${max}`);
+                        const pct = safePercent(earned ?? 0, max ?? null);
                         const needs = needsReview(earned ?? null, max ?? null);
-                        return { question, idx, earned, max, pct, needs };
+                        return { question, idx, earned: (earned ?? 0), max, pct, needs, qNo };
                       });
 
                       const filtered = reviewFilter === 'needs' ? computed.filter((c: { needs: boolean }) => c.needs) : computed;
@@ -583,7 +618,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                                     <AccordionContent className="px-3">
                                       {hasRationale ? (
                                         <div className="pb-2">
-                                          <QuestionDetailView question={question} questionIndex={qIdx} />
+                                          <QuestionDetailView question={{...question, max_marks: c.max}} questionIndex={qIdx} />
                                         </div>
                                       ) : (
                                         <div className="space-y-3 pb-2">

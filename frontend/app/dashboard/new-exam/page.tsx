@@ -12,22 +12,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Upload, Loader2, CheckCircle2, FileText, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
+import RubricBuilder from "@/components/rubric/RubricBuilder";
+import { Badge } from "@/components/ui/badge";
 import { saveAnswerKeyFile, saveStudentPaperFile } from "@/lib/firestore-client";
 import { gradingService, examService } from "@/lib/api";
 import { useUploadThing } from "@/lib/uploadthing";
+import { normalizeRubric } from "@/lib/rubric/rubricUtils";
+import buildGradingPrompt from "@/lib/grading/buildGradingPrompt";
 
 export default function NewExamPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [examTitle, setExamTitle] = useState("");
   const [examDescription, setExamDescription] = useState("");
-  const [marksPerQuestion, setMarksPerQuestion] = useState("1.0");
+  
   const [professorKey, setProfessorKey] = useState<File | null>(null);
   const [answerKeyUpload, setAnswerKeyUpload] = useState<{ url: string; name: string; size: number; key?: string } | null>(null);
   const [studentUploads, setStudentUploads] = useState<{ url: string; name: string; size: number; key?: string }[]>([]);
   const [studentFiles, setStudentFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [rubric, setRubric] = useState<{ numQuestions: number; questions: { marks: number; notes?: string }[] }>({ numQuestions: 0, questions: [] });
 
   // UploadThing programmatic uploaders
   const { startUpload: startAnswerKeyUpload, isUploading: isUploadingAnswerKey } = useUploadThing("answerKey", {
@@ -101,6 +106,15 @@ export default function NewExamPage() {
               console.log("✅ Saved student paper URL:", studentUpload.url);
             }
           }
+          // Log parsed grading JSON if available (sample)
+          try {
+            const sample = submissions.find((s) => (s.grade_json?.results || []).some((q: any) => q.breakdown));
+            if (sample) {
+              console.log("Parsed LLM grading JSON (sample):", JSON.stringify(sample.grade_json, null, 2));
+            }
+          } catch (err) {
+            // ignore logging failures
+          }
         } catch (err) {
           console.error("❌ Failed to save URLs:", err);
         }
@@ -166,7 +180,24 @@ export default function NewExamPage() {
         formData.append("student_papers", file);
       });
       formData.append("exam_title", examTitle);
-      formData.append("marks_per_question", marksPerQuestion);
+      
+      // Attach rubric (normalized) if present and build grading prompt
+      let normalized: any = null;
+      try {
+        normalized = normalizeRubric(rubric as any);
+        formData.append("rubric", JSON.stringify(normalized));
+
+        // Build a rich grading prompt to help the backend LLM use rubric + policy.
+        const prompt = buildGradingPrompt({
+          rubric: normalized,
+          answerKeyContext: answerKeyUpload?.name || answerKeyUpload?.url || "",
+          studentContext: studentUploads.map((s) => s.name || s.url).join("\n") || "",
+        });
+        formData.append("grading_prompt", prompt);
+        console.log("Grading prompt (truncated):", prompt.slice(0, 800));
+      } catch (e) {
+        console.warn("Failed to attach rubric to grading request", e);
+      }
       if (answerKeyUpload?.url) {
         formData.append("answer_key_url", answerKeyUpload.url);
       }
@@ -184,7 +215,21 @@ export default function NewExamPage() {
         formData.append("student_papers", file);
       });
       formData.append("exam_title", examTitle);
-      formData.append("marks_per_question", marksPerQuestion);
+      
+      // fallback: attach grading prompt even when previous Firestore save failed
+      try {
+        const normalizedFallback = normalizeRubric(rubric as any);
+        const prompt = buildGradingPrompt({
+          rubric: normalizedFallback,
+          answerKeyContext: answerKeyUpload?.name || answerKeyUpload?.url || "",
+          studentContext: studentUploads.map((s) => s.name || s.url).join("\n") || "",
+        });
+        formData.append("rubric", JSON.stringify(normalizedFallback));
+        formData.append("grading_prompt", prompt);
+        console.log("Grading prompt (truncated):", prompt.slice(0, 800));
+      } catch (e) {
+        // ignore
+      }
       
       gradingMutation.mutate(formData);
     } finally {
@@ -235,22 +280,7 @@ export default function NewExamPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="marks">Marks per Question *</Label>
-                <Input
-                  id="marks"
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  placeholder="1.0"
-                  value={marksPerQuestion}
-                  onChange={(e) => setMarksPerQuestion(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-zinc-500">
-                  Default marks allocated for each question
-                </p>
-              </div>
+              
             </CardContent>
           </Card>
 
@@ -378,6 +408,28 @@ export default function NewExamPage() {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Rubric UI */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between w-full">
+                <div>
+                  <CardTitle>Rubric</CardTitle>
+                  <CardDescription>Define marks and notes per question</CardDescription>
+                </div>
+                <Badge variant="secondary" className="text-xs">Rubric Policy v1</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <RubricBuilder
+                value={rubric}
+                onChange={(next) => {
+                  setRubric(next);
+                  console.log("rubric updated", next);
+                }}
+              />
             </CardContent>
           </Card>
 

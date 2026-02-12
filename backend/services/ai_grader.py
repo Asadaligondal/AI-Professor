@@ -151,7 +151,8 @@ class AIGradingService:
         student_papers_pdf: bytes,
         marks_per_question: float = 1.0,
         max_tokens: int = 4000,
-        temperature: float = 0.2
+        temperature: float = 0.2,
+        rubric: dict = None
     ) -> List[StudentGradeResult]:
         """
         Grade student exam papers against professor's answer key.
@@ -165,6 +166,7 @@ class AIGradingService:
             marks_per_question: Marks allocated per question
             max_tokens: Maximum tokens for API response
             temperature: Model temperature (lower = more consistent)
+            rubric: Optional rubric dict with question marks and policies
         
         Returns:
             List of StudentGradeResult objects
@@ -189,14 +191,27 @@ class AIGradingService:
                 self.image_to_base64(img) for img in student_images
             ]
             
+            # Log rubric before calling OpenAI
+            if rubric and rubric.get('questions'):
+                rubric_summary = [
+                    {
+                        'qNo': q.get('qNo', idx + 1),
+                        'marks': q.get('marks', marks_per_question),
+                        'policy': q.get('policy', {})
+                    }
+                    for idx, q in enumerate(rubric.get('questions', []))
+                ]
+                logger.info(f"Rubric sent to LLM: {rubric_summary}")
+            
             # Prepare system instruction
-            system_instruction = self._get_system_instruction()
+            system_instruction = self._get_system_instruction(rubric)
             
             # Prepare user prompt
             user_prompt = self._get_user_prompt(
                 len(professor_images_base64),
                 len(student_images_base64),
-                marks_per_question
+                marks_per_question,
+                rubric
             )
             
             # Build content array with all images
@@ -216,7 +231,7 @@ class AIGradingService:
             )
             
             # Parse and validate response
-            grading_results = self._parse_grading_response(response)
+            grading_results = self._parse_grading_response(response, rubric)
             
             logger.info(f"Successfully graded {len(grading_results)} student(s)")
             
@@ -230,8 +245,20 @@ class AIGradingService:
             raise GradingError(f"Grading failed: {str(e)}")
     
     @staticmethod
-    def _get_system_instruction() -> str:
+    def _get_system_instruction(rubric: dict = None) -> str:
         """Get the system instruction for AI grading."""
+        # Build per-question max marks line for the example
+        rubric_rule = ""
+        if rubric and rubric.get('questions'):
+            marks_list = ", ".join(
+                f"Q{q.get('qNo', i+1)}={q.get('marks')}" for i, q in enumerate(rubric['questions'])
+            )
+            rubric_rule = (
+                f"\n- RUBRIC MAX MARKS: {marks_list}. "
+                "You MUST set max_marks to these values and grade marks_obtained on the SAME scale. "
+                "For example if Q1 max is 12, a half-correct answer is 6 NOT 0.5.\n"
+            )
+
         return (
             "You are a meticulous automated Exam Scanner and Grader with explainable reasoning capabilities. "
             "You will receive a PDF (as a sequence of images) containing exams from MULTIPLE students.\n\n"
@@ -271,6 +298,7 @@ class AIGradingService:
             "CRITICAL RULES:\n"
             "- ALWAYS return a JSON array, even if there's only one student: [single_student]\n"
             "- Ensure all numeric values (marks_obtained, max_marks, total_score) are numbers, not strings\n"
+            + rubric_rule +
             "- Be thorough in feedback, especially when deducting marks - cite specific discrepancies from the key\n"
             "- For each question, provide detailed rationale with points_awarded and points_deducted arrays\n"
             "- Calculate concept_alignment as a percentage showing how well the student's answer matches key concepts\n"
@@ -281,11 +309,23 @@ class AIGradingService:
     def _get_user_prompt(
         professor_pages: int,
         student_pages: int,
-        marks_per_question: float
+        marks_per_question: float,
+        rubric: dict = None
     ) -> str:
         """Generate the user prompt for grading."""
+        rubric_instructions = ""
+        if rubric and rubric.get('questions'):
+            rubric_instructions = "\n\nIMPORTANT RUBRIC INSTRUCTIONS:\n"
+            rubric_instructions += "You MUST use the exact max_marks specified below for each question. DO NOT use 1 mark per question.\n"
+            for idx, q in enumerate(rubric.get('questions', [])):
+                qNo = q.get('qNo', idx + 1)
+                marks = q.get('marks', marks_per_question)
+                rubric_instructions += f"Question {qNo}: MAXIMUM {marks} marks (not 1 mark)\n"
+            rubric_instructions += "Return scores within these limits. Example: if max is 12 marks, return values like 8.5/12, not 0.7/1\n"
+        
+        marks_line = f"Marks per Question: {marks_per_question}" if not rubric_instructions else ""
         return f"""
-Marks per Question: {marks_per_question}
+{marks_line}{rubric_instructions}
 
 Analyzing multi-student exam batch:
 - Image Set A ({professor_pages} pages): Professor's complete answer key
@@ -385,7 +425,7 @@ Remember: Return [{{student1}}, {{student2}}, ...] format, NOT just {{student1}}
             logger.error(f"OpenAI API call failed: {str(e)}")
             raise
     
-    def _parse_grading_response(self, response_text: str) -> List[StudentGradeResult]:
+    def _parse_grading_response(self, response_text: str, rubric: dict = None) -> List[StudentGradeResult]:
         """
         Parse and validate the AI grading response.
         
@@ -433,13 +473,45 @@ Remember: Return [{{student1}}, {{student2}}, ...] format, NOT just {{student1}}
                             improvement_tip=rationale_data.get("improvement_tip", "")
                         )
                     
+                    # Get rubric max for this question and force it
+                    qno = int(result.get("q_num", "1") or "1")
+                    rubric_max = None
+                    if rubric and rubric.get('questions'):
+                        for q in rubric['questions']:
+                            if q.get('qNo') == qno:
+                                rubric_max = float(q.get('marks', 0))
+                                break
+                    
+                    ai_max = float(result.get("max_marks", 0) or 0)
+                    ai_score = float(result.get("marks_obtained", 0) or 0)
+                    
+                    if rubric_max and rubric_max > 0:
+                        max_marks = rubric_max
+                        # Detect if AI graded on wrong scale (score <= 1 but max >> 1)
+                        if ai_score <= 1 and rubric_max > 1:
+                            marks_obtained = round(ai_score * rubric_max, 2)
+                            logger.info(f"Q{qno}: AI scored {ai_score} on 0-1 scale, scaled to {marks_obtained}/{max_marks}")
+                        elif ai_max > 0 and ai_max < rubric_max:
+                            marks_obtained = round((ai_score / ai_max) * rubric_max, 2)
+                            logger.info(f"Q{qno}: Scaled AI score {ai_score}/{ai_max} -> {marks_obtained}/{max_marks}")
+                        else:
+                            marks_obtained = ai_score
+                    else:
+                        max_marks = ai_max if ai_max > 0 else marks_per_question
+                        marks_obtained = ai_score
+                    
+                    # Clamp score to max
+                    if marks_obtained > max_marks:
+                        logger.warning(f"Score {marks_obtained} > max {max_marks} for Q{qno}, clamping")
+                        marks_obtained = max_marks
+                    
                     question_grades.append(QuestionGrade(
                         q_num=str(result.get("q_num", "?")),
                         student_answer=result.get("student_answer", "N/A"),
                         processed_answer=result.get("processed_answer"),
                         expected_answer=result.get("expected_answer"),
-                        marks_obtained=float(result.get("marks_obtained", 0)),
-                        max_marks=float(result.get("max_marks", 0)),
+                        marks_obtained=marks_obtained,
+                        max_marks=max_marks,
                         feedback=result.get("feedback", ""),
                         rationale=rationale,
                         concept_alignment=result.get("concept_alignment")

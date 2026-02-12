@@ -183,7 +183,8 @@ class FirestoreHelper:
         title: str,
         answer_key_url: str,
         answer_key_data: Dict[str, Any],
-        max_marks: int
+        max_marks: int,
+        rubric: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create a new exam and return its document ID"""
         db = get_db()
@@ -196,6 +197,20 @@ class FirestoreHelper:
             "created_at": SERVER_TIMESTAMP,
             "updated_at": SERVER_TIMESTAMP
         }
+        # Attach rubric if provided
+        if rubric:
+            try:
+                # Expect normalized rubric with totalQuestions, totalMarks, questions
+                exam_data["rubric"] = {
+                    "version": rubric.get("version", 1),
+                    "totalQuestions": rubric.get("totalQuestions", 0),
+                    "totalMarks": rubric.get("totalMarks", 0),
+                    "questions": rubric.get("questions", []),
+                    "updatedAt": SERVER_TIMESTAMP,
+                }
+            except Exception:
+                # If anything goes wrong, skip attaching rubric
+                pass
         doc_ref = db.collection(Collections.EXAMS).document()
         doc_ref.set(exam_data)
         return doc_ref.id

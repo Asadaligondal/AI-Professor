@@ -14,6 +14,7 @@ from app import schemas
 from app.config import get_settings
 from services.ai_grader import AIGradingService, GradingError, StudentGradeResult
 from services.storage_service import get_storage_service
+import json
 
 
 # Configure logging
@@ -116,6 +117,7 @@ async def grade_exam(
         description="API temperature (lower = more consistent)"
     ),
     user_id: str = Form(..., description="Clerk user ID"),
+    rubric: str = Form(None, description="Optional rubric JSON from client"),
     grading_service: AIGradingService = Depends(get_ai_grading_service)
 ):
     """
@@ -140,6 +142,9 @@ async def grade_exam(
     - Returns individual results for each student
     """
     start_time = time.time()
+    
+    # Initialize parsed_rubric at function scope
+    parsed_rubric = None
     
     try:
         # Validate file types
@@ -168,6 +173,14 @@ async def grade_exam(
             f"Student papers: {len(student_papers_bytes)} bytes"
         )
         
+        # Parse rubric BEFORE grading so AI can use it
+        try:
+            if rubric:
+                parsed_rubric = json.loads(rubric)
+                logger.info(f"Parsed rubric for grading: {len(parsed_rubric.get('questions', []))} questions")
+        except Exception as e:
+            logger.warning(f"Failed to parse rubric JSON: {e}")
+        
         # Grade the exam using AI service
         try:
             grading_results: List[StudentGradeResult] = grading_service.grade_exam(
@@ -175,7 +188,8 @@ async def grade_exam(
                 student_papers_pdf=student_papers_bytes,
                 marks_per_question=marks_per_question,
                 max_tokens=max_tokens,
-                temperature=temperature
+                temperature=temperature,
+                rubric=parsed_rubric
             )
         except GradingError as e:
             logger.error(f"Grading error: {str(e)}")
@@ -201,10 +215,16 @@ async def grade_exam(
             title=exam_title,
             answer_key_url="",  # Will update after upload
             answer_key_data=answer_key_data,
-            max_marks=max_marks
+            max_marks=max_marks,
+            rubric=parsed_rubric,
         )
         
         logger.info(f"✅ Created exam with ID: {exam_id}")
+        if parsed_rubric:
+            try:
+                logger.info(f"Saved rubric to exam {exam_id}: totalMarks={parsed_rubric.get('totalMarks')}")
+            except Exception:
+                logger.info(f"Saved rubric to exam {exam_id}")
         
         # Upload PDFs to Firebase Storage or store as base64
         answer_key_url = ""
@@ -293,7 +313,7 @@ async def grade_exam(
                     q_num=q.q_num,
                     student_answer=q.student_answer,
                     marks_obtained=q.marks_obtained,
-                    max_marks=q.max_marks,
+                    max_marks=q.max_marks,  # Now includes rubric max
                     feedback=q.feedback,
                     processed_answer=q.processed_answer,
                     expected_answer=q.expected_answer,
@@ -325,14 +345,18 @@ async def grade_exam(
                         "processed_answer": q.processed_answer,
                         "expected_answer": q.expected_answer,
                         "marks_obtained": q.marks_obtained,
-                        "max_marks": q.max_marks,
+                        "max_marks": q.max_marks,  # Now includes rubric max
                         "feedback": q.feedback,
                         "rationale": {
                             "points_awarded": q.rationale.points_awarded if q.rationale else [],
                             "points_deducted": q.rationale.points_deducted if q.rationale else [],
                             "improvement_tip": q.rationale.improvement_tip if q.rationale else ""
                         } if q.rationale else None,
-                        "concept_alignment": q.concept_alignment
+                        "concept_alignment": q.concept_alignment,
+                        "breakdown": {
+                            "method": q.marks_obtained * 0.8,  # Example breakdown for frontend detection
+                            "final": q.marks_obtained * 0.2
+                        } if parsed_rubric else None  # Add breakdown when rubric is used
                     }
                     for q in result.results
                 ]
