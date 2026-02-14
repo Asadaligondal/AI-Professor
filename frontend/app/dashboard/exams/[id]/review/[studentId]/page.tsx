@@ -18,6 +18,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { examService } from "@/lib/api";
 import { ImageViewer } from "@/components/image-viewer";
 import { motion, AnimatePresence } from "framer-motion";
+import ReviewQueuePanel from "@/components/review/ReviewQueuePanel";
 
 interface ReviewPageProps {
   params: Promise<{
@@ -123,6 +124,10 @@ export default function ReviewPage({ params }: ReviewPageProps) {
               </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Score</p>
             </div>
+          </div>
+          {/* Needs Review Panel for the exam */}
+          <div className="mt-4">
+            <ReviewQueuePanel examId={examId} />
           </div>
         </div>
       </header>

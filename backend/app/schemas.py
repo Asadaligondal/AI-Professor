@@ -146,6 +146,7 @@ class ExamUpdate(BaseModel):
     description: Optional[str] = None
     total_marks: Optional[int] = Field(None, ge=0)
     is_active: Optional[bool] = None
+    reviewed: Optional[bool] = None
 
 
 class ExamResponse(ExamBase):

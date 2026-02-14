@@ -181,3 +181,54 @@ async def get_exams(user_id: str):
     
     logger.info(f"Returning {len(exam_list)} exams")
     return exam_list
+
+
+@router.patch(
+    "/{exam_id}",
+    response_model=schemas.ExamResponse,
+    summary="Update exam",
+    description="Update exam fields such as title, description, total marks, active flag, or reviewed flag"
+)
+async def patch_exam(
+    exam_id: str,
+    update_data: schemas.ExamUpdate
+):
+    """Patch/update exam metadata"""
+    exam = FirestoreHelper.get_exam(exam_id)
+    if not exam:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exam with ID {exam_id} not found"
+        )
+
+    updates = {}
+    # Map provided fields to Firestore document fields
+    if update_data.title is not None:
+        updates["title"] = update_data.title
+    if update_data.description is not None:
+        updates["description"] = update_data.description
+    if update_data.total_marks is not None:
+        updates["max_marks"] = update_data.total_marks
+    if update_data.is_active is not None:
+        updates["is_active"] = update_data.is_active
+    if getattr(update_data, "reviewed", None) is not None:
+        updates["reviewed"] = update_data.reviewed
+
+    if updates:
+        FirestoreHelper.update_exam(exam_id, updates)
+
+    updated = FirestoreHelper.get_exam(exam_id)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve updated exam"
+        )
+    # Normalize some fields for response
+    if "teacher_id" in updated:
+        updated["owner_id"] = updated.get("teacher_id")
+    if "answer_key_url" in updated:
+        updated["key_pdf_url"] = updated.get("answer_key_url")
+    if "max_marks" in updated:
+        updated["total_marks"] = updated.get("max_marks")
+
+    return updated

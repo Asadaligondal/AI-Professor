@@ -38,6 +38,12 @@ export const examService = {
     );
     return response.data;
   },
+  
+  // Patch exam metadata (e.g., mark as reviewed)
+  patchExam: async (examId: string | number, data: Partial<any>) => {
+    const response = await apiClient.patch<Exam>(`/api/v1/exams/${examId}`, data);
+    return response.data;
+  },
 };
 
 export const gradingService = {

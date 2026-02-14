@@ -121,8 +121,9 @@ export default function NewExamPage() {
       }
       
       if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "") {
-        console.log("Redirecting to:", `/dashboard/results/${data.exam_id}`);
-        router.push(`/dashboard/results/${data.exam_id}`);
+        console.log("Redirecting to Review for exam:", data.exam_id);
+        // Redirect to the Review workspace so teacher can edit before publishing to Results
+        router.push(`/dashboard/review?examId=${data.exam_id}`);
       } else {
         console.warn("No valid exam_id in response, redirecting to dashboard");
         toast.error("Grading completed but exam ID not found. Check dashboard.");

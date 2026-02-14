@@ -218,6 +218,12 @@ async def grade_exam(
             max_marks=max_marks,
             rubric=parsed_rubric,
         )
+        # Mark exam as in-progress so it shows up in the Review queue
+        try:
+            FirestoreHelper.update_exam(exam_id, {"status": "in_progress", "reviewed": False})
+            logger.info(f"Marked exam {exam_id} as in_progress for review")
+        except Exception as e:
+            logger.warning(f"Failed to mark exam {exam_id} as in_progress: {e}")
         
         logger.info(f"✅ Created exam with ID: {exam_id}")
         if parsed_rubric:

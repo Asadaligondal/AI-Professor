@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function ReviewIndexPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const [pushing, setPushing] = useState<string | null>(null);
 
   const { data: exams, isLoading } = useQuery({
     queryKey: ["exams", user?.uid],
@@ -48,12 +50,38 @@ export default function ReviewIndexPage() {
         {reviewable.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {reviewable.map((exam: any) => (
-              <Card key={exam.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/results/${exam.id}`)}>
+              <Card key={exam.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{exam.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-sm text-zinc-600">{exam.total_submissions || 0} submissions</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-zinc-600">{exam.total_submissions || 0} submissions</div>
+                    <div className="space-x-2">
+                      <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/results/${exam.id}`)}>Open Results</Button>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        disabled={pushing === exam.id}
+                        onClick={async (ev) => {
+                          ev.stopPropagation();
+                          try {
+                            setPushing(exam.id);
+                            // Mark exam as reviewed on backend
+                            await examService.patchExam(exam.id, { reviewed: true });
+                            // Navigate to Results after pushing
+                            router.push(`/dashboard/results/${exam.id}`);
+                          } catch (err) {
+                            console.error("Push to Results failed:", err);
+                          } finally {
+                            setPushing(null);
+                          }
+                        }}
+                      >
+                        {pushing === exam.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Push to Results"}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
