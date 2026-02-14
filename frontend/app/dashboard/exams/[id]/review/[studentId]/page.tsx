@@ -104,7 +104,7 @@ export default function ReviewPage({ params }: ReviewPageProps) {
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
-              onClick={() => router.push(`/exams/${examId}`)}
+              onClick={() => router.push(`/dashboard/exams/${examId}/review`)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Students
@@ -142,7 +142,7 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button size="sm" variant="outline" onClick={() => {
-                    // Reset edits for current question
+                    // Reset edits for current question to last saved values
                     setCurrentMarks(currentQuestion.marks_obtained ?? 0);
                     setCurrentFeedback(currentQuestion.feedback ?? "");
                     toast.success("Reverted edits for this question");
@@ -166,8 +166,10 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                       const grade_json = { ...(submission.grade_json || {}), results: updatedResults };
 
                       await examService.updateSubmission(submission.id, { grade_json });
-                      // Invalidate submissions so UI refreshes
-                      queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+                      // Invalidate submissions so UI refreshes and pick up saved values
+                      await queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+                      // reflect saved values locally
+                      setCurrentMarks(Number(currentMarks));
                       toast.success("Saved edits");
                     } catch (err) {
                       console.error("Save failed", err);
@@ -178,19 +180,38 @@ export default function ReviewPage({ params }: ReviewPageProps) {
                   }} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
                   <Button size="sm" variant="ghost" onClick={async () => {
                     if (!submission) return;
+                    // Only allow marking reviewed when on the last question
+                    if (currentQuestionIndex !== questions.length - 1) {
+                      toast.error("Mark Reviewed is only allowed on the last question. Navigate to the final question to finish reviewing.");
+                      return;
+                    }
                     try {
                       setMarkingReviewed(true);
-                      await examService.updateSubmission(submission.id, { grade_status: 'reviewed' });
-                      queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
-                      toast.success("Marked as reviewed");
-                      // Optionally redirect back to review list
+                      // Ensure current question is saved before marking reviewed
+                      const updatedResults = questions.map((q: any, idx: number) => {
+                        if (idx === currentQuestionIndex) {
+                          return {
+                            ...q,
+                            marks_obtained: Number(currentMarks),
+                            feedback: currentFeedback,
+                          };
+                        }
+                        return q;
+                      });
+
+                      const grade_json = { ...(submission.grade_json || {}), results: updatedResults };
+                      await examService.updateSubmission(submission.id, { grade_json, grade_status: 'reviewed' });
+                      await queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+                      toast.success("Student review completed");
+                      // After marking reviewed, go back to exam review list
+                      router.push(`/dashboard/exams/${examId}/review`);
                     } catch (err) {
                       console.error("Mark reviewed failed", err);
                       toast.error("Failed to mark reviewed");
                     } finally {
                       setMarkingReviewed(false);
                     }
-                  }} disabled={markingReviewed}>{markingReviewed ? "..." : "Mark Reviewed"}</Button>
+                  }} disabled={markingReviewed || questions.length === 0}>{markingReviewed ? "..." : "Mark Reviewed"}</Button>
                 </div>
               </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Score</p>

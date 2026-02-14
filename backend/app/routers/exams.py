@@ -134,6 +134,13 @@ async def update_submission(
     # Update feedback
     if update_data.ai_feedback is not None:
         updates["ai_feedback"] = update_data.ai_feedback
+    # Update grade status (map to Firestore 'status' field)
+    if update_data.grade_status is not None:
+        # grade_status may be a pydantic enum; store its value string in Firestore
+        try:
+            updates["status"] = update_data.grade_status.value
+        except Exception:
+            updates["status"] = str(update_data.grade_status)
     
     # Apply updates
     if updates:
