@@ -1,9 +1,9 @@
 "use client";
 
 // Force rebuild - TypeScript fixes applied
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,11 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { examService } from "@/lib/api";
+import { toast } from "sonner";
 import { ImageViewer } from "@/components/image-viewer";
 import { motion, AnimatePresence } from "framer-motion";
 import ReviewQueuePanel from "@/components/review/ReviewQueuePanel";
+import { AppShell } from "@/components/layout/AppShell";
 
 interface ReviewPageProps {
   params: Promise<{
@@ -34,6 +38,11 @@ export default function ReviewPage({ params }: ReviewPageProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"side-by-side" | "ai-analysis">("side-by-side");
   const [activeTab, setActiveTab] = useState<"student" | "key">("student");
+  const [currentMarks, setCurrentMarks] = useState<number | string>(0);
+  const [currentFeedback, setCurrentFeedback] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [markingReviewed, setMarkingReviewed] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch exam details
   const { data: exam } = useQuery({
@@ -50,6 +59,13 @@ export default function ReviewPage({ params }: ReviewPageProps) {
   const submission = submissions?.find((s) => s.id === studentId);
   const questions = submission?.grade_json?.results || [];
   const currentQuestion = questions[currentQuestionIndex];
+
+  useEffect(() => {
+    if (currentQuestion) {
+      setCurrentMarks(currentQuestion.marks_obtained ?? 0);
+      setCurrentFeedback(currentQuestion.feedback ?? "");
+    }
+  }, [currentQuestionIndex, currentQuestion]);
 
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
@@ -80,7 +96,8 @@ export default function ReviewPage({ params }: ReviewPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black flex flex-col">
+    <AppShell pageTitle="Review Student">
+      <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black flex flex-col">
       {/* Top Header */}
       <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="container mx-auto px-4 py-4">
@@ -119,8 +136,62 @@ export default function ReviewPage({ params }: ReviewPageProps) {
               </p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                {currentQuestion.marks_obtained} / {currentQuestion.max_marks}
+              <div className="flex items-center gap-4">
+                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+                  {currentMarks} / {currentQuestion.max_marks}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    // Reset edits for current question
+                    setCurrentMarks(currentQuestion.marks_obtained ?? 0);
+                    setCurrentFeedback(currentQuestion.feedback ?? "");
+                    toast.success("Reverted edits for this question");
+                  }}>Revert</Button>
+                  <Button size="sm" variant="default" onClick={async () => {
+                    // Save only current question edits
+                    if (!submission) return;
+                    try {
+                      setSaving(true);
+                      const updatedResults = questions.map((q: any, idx: number) => {
+                        if (idx === currentQuestionIndex) {
+                          return {
+                            ...q,
+                            marks_obtained: Number(currentMarks),
+                            feedback: currentFeedback,
+                          };
+                        }
+                        return q;
+                      });
+
+                      const grade_json = { ...(submission.grade_json || {}), results: updatedResults };
+
+                      await examService.updateSubmission(submission.id, { grade_json });
+                      // Invalidate submissions so UI refreshes
+                      queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+                      toast.success("Saved edits");
+                    } catch (err) {
+                      console.error("Save failed", err);
+                      toast.error("Failed to save edits");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+                  <Button size="sm" variant="ghost" onClick={async () => {
+                    if (!submission) return;
+                    try {
+                      setMarkingReviewed(true);
+                      await examService.updateSubmission(submission.id, { grade_status: 'reviewed' });
+                      queryClient.invalidateQueries({ queryKey: ["submissions", examId] });
+                      toast.success("Marked as reviewed");
+                      // Optionally redirect back to review list
+                    } catch (err) {
+                      console.error("Mark reviewed failed", err);
+                      toast.error("Failed to mark reviewed");
+                    } finally {
+                      setMarkingReviewed(false);
+                    }
+                  }} disabled={markingReviewed}>{markingReviewed ? "..." : "Mark Reviewed"}</Button>
+                </div>
               </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Score</p>
             </div>
@@ -230,14 +301,29 @@ export default function ReviewPage({ params }: ReviewPageProps) {
               </TabsContent>
             </Tabs>
 
-            {/* Feedback Section */}
+            {/* Feedback & Edit Section */}
             <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
               <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-300 mb-2">
-                AI Feedback
+                AI Feedback (editable)
               </h4>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                {currentQuestion.feedback}
-              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="text-xs text-zinc-700 dark:text-zinc-300">Marks (0 - {currentQuestion.max_marks})</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={currentQuestion.max_marks}
+                    value={String(currentMarks)}
+                    onChange={(e) => setCurrentMarks(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-700 dark:text-zinc-300">Feedback</label>
+                  <Textarea value={currentFeedback} onChange={(e) => setCurrentFeedback(e.target.value)} className="mt-1 h-24" />
+                </div>
+              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-3">You can edit the marks and feedback for this question and click Save.</p>
             </div>
           </CardContent>
         </Card>
@@ -271,6 +357,7 @@ export default function ReviewPage({ params }: ReviewPageProps) {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </AppShell>
   );
 }

@@ -50,7 +50,7 @@ export default function ReviewIndexPage() {
         {reviewable.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {reviewable.map((exam: any) => (
-              <Card key={exam.id} className="hover:shadow-lg transition-shadow">
+              <Card key={exam.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/exams/${exam.id}/review`)}>
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{exam.title}</CardTitle>
                 </CardHeader>
@@ -58,7 +58,7 @@ export default function ReviewIndexPage() {
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-zinc-600">{exam.total_submissions || 0} submissions</div>
                     <div className="space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/results/${exam.id}`)}>Open Results</Button>
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/results/${exam.id}`); }}>Open Results</Button>
                       <Button
                         size="sm"
                         variant="default"
@@ -67,9 +67,9 @@ export default function ReviewIndexPage() {
                           ev.stopPropagation();
                           try {
                             setPushing(exam.id);
-                            // Mark exam as reviewed on backend
-                            await examService.patchExam(exam.id, { reviewed: true });
-                            // Navigate to Results after pushing
+                            // Mark exam as reviewed and completed on backend
+                            await examService.patchExam(exam.id, { reviewed: true, status: 'completed' });
+                            // After pushing, navigate to Results
                             router.push(`/dashboard/results/${exam.id}`);
                           } catch (err) {
                             console.error("Push to Results failed:", err);

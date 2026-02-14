@@ -14,11 +14,16 @@ export default function ResultsIndexPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Fetch all exams
+  // Fetch all exams (filter to only show completed/pushed exams)
   const { data: exams, isLoading } = useQuery({
     queryKey: ["exams", user?.uid],
     queryFn: () => examService.getExams(user!.uid),
     enabled: !!user,
+  });
+
+  const visibleExams = (exams || []).filter((e: any) => {
+    const status = (e.status || "").toString().toLowerCase();
+    return status === "completed" || e.reviewed === true;
   });
 
   if (isLoading) {
@@ -48,7 +53,7 @@ export default function ResultsIndexPage() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Exam Results</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {exams?.length || 0} exam{exams?.length !== 1 ? "s" : ""} with results
+            {visibleExams?.length || 0} exam{visibleExams?.length !== 1 ? "s" : ""} with results
           </p>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Select an exam to view submissions, paper scans, and grading reports.</p>
         </div>
@@ -58,7 +63,7 @@ export default function ResultsIndexPage() {
         </Button>
       </div>
 
-      {!exams || exams.length === 0 ? (
+      {!visibleExams || visibleExams.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="h-16 w-16 text-zinc-400 mx-auto mb-4" />
@@ -76,7 +81,7 @@ export default function ResultsIndexPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {exams.map((exam) => (
+          {visibleExams.map((exam: any) => (
             <Card
               key={exam.id}
               className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -92,7 +97,7 @@ export default function ResultsIndexPage() {
                 <div className="flex items-center justify-between mb-4 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-500">Status:</span>
-                    <Badge variant="secondary">Completed</Badge>
+                    <Badge variant="secondary">{exam.status ? exam.status : (exam.reviewed ? 'Completed' : 'Unknown')}</Badge>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-500">Total:</span>
