@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus } from "lucide-react";
 import { getClassroom } from "@/lib/firestore/classrooms";
 import { listSubjects, createSubject } from "@/lib/firestore/subjects";
+import StudentsSection from "@/components/classrooms/StudentsSection";
 
 export default function ClassroomDetailPage() {
   const params = useParams();
@@ -89,6 +90,9 @@ export default function ClassroomDetailPage() {
             <p className="text-xs text-zinc-500 mt-2">Created: {classroom?.created_at ? new Date(classroom.created_at.seconds ? classroom.created_at.seconds * 1000 : classroom.created_at).toLocaleString() : '-'}</p>
           </CardContent>
         </Card>
+
+        {/* Students Section - Full Width */}
+        <StudentsSection classroomId={classroomId || ""} />
 
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
