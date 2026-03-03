@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Student } from "@/types/student";
+import type { Student, NewStudent } from "@/types/student";
 import StudentFormDialog from "./StudentFormDialog";
 
 interface StudentsTableProps {
   students: Student[];
-  onUpdateStudent: (studentId: string, data: any) => Promise<void>;
+  onUpdateStudent: (studentId: string, data: NewStudent) => Promise<void>;
   onDeleteStudent: (studentId: string) => Promise<void>;
 }
 
 export default function StudentsTable({
-  students,
+  students = [],
   onUpdateStudent,
   onDeleteStudent
 }: StudentsTableProps) {
@@ -39,7 +39,7 @@ export default function StudentsTable({
     }
   };
 
-  const handleUpdate = async (studentId: string, data: any) => {
+  const handleUpdate = async (studentId: string, data: NewStudent) => {
     await onUpdateStudent(studentId, data);
   };
 

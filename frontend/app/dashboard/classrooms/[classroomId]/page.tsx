@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -54,6 +54,8 @@ export default function ClassroomDetailPage() {
   };
 
   useEffect(() => {
+    if (!classroomId) return;
+    
     let mounted = true;
     const load = async () => {
       setLoading(true);
@@ -69,6 +71,19 @@ export default function ClassroomDetailPage() {
     load();
     return () => { mounted = false; };
   }, [classroomId]);
+
+  if (!classroomId) {
+    return (
+      <AppShell pageTitle="Classroom">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Invalid Classroom</h2>
+            <p className="text-zinc-600 dark:text-zinc-400">Classroom ID not found.</p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell pageTitle={classroom?.name || 'Classroom'}>

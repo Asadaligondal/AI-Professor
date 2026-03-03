@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +18,9 @@ interface StudentFormDialogProps {
 
 export default function StudentFormDialog({
   children,
-  student,
+  student = null,
   onSubmit,
-  existingRollNumbers
+  existingRollNumbers = []
 }: StudentFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");

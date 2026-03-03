@@ -1,7 +1,7 @@
 "use client";
 
 // Force rebuild - TypeScript fixes applied
-import { use, useState, useEffect } from "react";
+import React, { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";

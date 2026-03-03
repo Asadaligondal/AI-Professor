@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // Protected routes that require authentication
 const protectedPaths = ['/dashboard', '/exams', '/submissions'];
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Check if the current path is protected
