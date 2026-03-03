@@ -142,8 +142,11 @@ export function AppShell({ children, pageTitle = "Dashboard" }: AppShellProps) {
         {/* Top Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Page Title */}
+            {/* Page Title + Back */}
             <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => router.back()} className="-ml-2">
+                Back
+              </Button>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {pageTitle}
               </h1>

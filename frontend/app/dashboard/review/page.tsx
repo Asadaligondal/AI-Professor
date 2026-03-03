@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,49 @@ export default function ReviewIndexPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [pushing, setPushing] = useState<string | null>(null);
+  const [allReviewedMap, setAllReviewedMap] = useState<Record<string, boolean>>({});
 
   const { data: exams, isLoading } = useQuery({
     queryKey: ["exams", user?.uid],
     queryFn: () => examService.getExams(user!.uid),
     enabled: !!user,
   });
+
+  // Determine whether all submissions for each exam have been reviewed.
+  useEffect(() => {
+    let mounted = true;
+    const checkAllReviewed = async () => {
+      if (!exams || exams.length === 0) return;
+      const map: Record<string, boolean> = {};
+      await Promise.all(
+        exams.map(async (exam: any) => {
+          try {
+            const subs = await examService.getExamSubmissions(exam.id);
+            if (!subs || subs.length === 0) {
+              map[exam.id] = false;
+              return;
+            }
+            const allReviewed = subs.every((s: any) => {
+              // Consider a submission reviewed if any of these indicators are present
+              if (s.reviewed === true) return true;
+              if (s.published === true) return true;
+              if (s.status && (s.status === 'reviewed' || s.status === 'completed' || s.status === 'published')) return true;
+              if (s.grade_json && Array.isArray(s.grade_json.results) && s.grade_json.results.length > 0) return true;
+              return false;
+            });
+            map[exam.id] = !!allReviewed;
+          } catch (err) {
+            console.error('Failed to fetch submissions for exam', exam.id, err);
+            map[exam.id] = false;
+          }
+        })
+      );
+      if (mounted) setAllReviewedMap(map);
+    };
+
+    checkAllReviewed();
+    return () => { mounted = false; };
+  }, [exams]);
 
   if (isLoading) {
     return (
@@ -32,9 +69,12 @@ export default function ReviewIndexPage() {
   }
 
   // Try to filter exams that are explicitly marked in-progress / needs review
+  // Exclude exams that have already been pushed to Results (reviewed/published/completed)
   const reviewable = (exams || []).filter((e: any) => {
     const s = (e.status || "").toString().toLowerCase();
-    return s === "in_progress" || s === "in-progress" || s === "needs_review" || s === "in-review";
+    const isReviewStatus = s === "in_progress" || s === "in-progress" || s === "needs_review" || s === "in-review";
+    const isPushed = e.reviewed === true || e.pushed_to_results === true || s === "completed" || s === "published" || e.published === true;
+    return isReviewStatus && !isPushed;
   });
 
   console.log("UX Clarity Pass v1");
@@ -62,7 +102,7 @@ export default function ReviewIndexPage() {
                       <Button
                         size="sm"
                         variant="default"
-                        disabled={pushing === exam.id}
+                        disabled={pushing === exam.id || !allReviewedMap[exam.id]}
                         onClick={async (ev) => {
                           ev.stopPropagation();
                           try {
@@ -72,7 +112,7 @@ export default function ReviewIndexPage() {
                             // After pushing, navigate to Results
                             router.push(`/dashboard/results/${exam.id}`);
                           } catch (err) {
-                            console.error("Push to Results failed:", err);
+                            console.error('Push to Results failed:', err);
                           } finally {
                             setPushing(null);
                           }

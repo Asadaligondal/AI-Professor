@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation } from "@tanstack/react-query";
@@ -33,6 +33,8 @@ export default function NewExamPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [rubric, setRubric] = useState<{ numQuestions: number; questions: { marks: number; notes?: string }[] }>({ numQuestions: 0, questions: [] });
+  const answerInputRef = useRef<HTMLInputElement | null>(null);
+  const studentInputRef = useRef<HTMLInputElement | null>(null);
 
   // UploadThing programmatic uploaders
   const { startUpload: startAnswerKeyUpload, isUploading: isUploadingAnswerKey } = useUploadThing("answerKey", {
@@ -320,8 +322,10 @@ export default function NewExamPage() {
                 ) : (
                   <div className="flex items-center gap-4">
                     <input
+                      ref={answerInputRef}
                       type="file"
                       accept="application/pdf"
+                      className="hidden"
                       disabled={isUploadingAnswerKey}
                       onChange={async (e) => {
                         const f = e.target.files?.[0];
@@ -335,6 +339,15 @@ export default function NewExamPage() {
                         await startAnswerKeyUpload([f]);
                       }}
                     />
+
+                    <Button
+                      type="button"
+                      onClick={() => answerInputRef.current?.click()}
+                      disabled={isUploadingAnswerKey}
+                    >
+                      Choose file
+                    </Button>
+
                     {isUploadingAnswerKey && (
                       <div className="flex items-center gap-2 text-sm text-zinc-500">
                         <Loader2 className="h-4 w-4 animate-spin" /> Uploading...
@@ -349,9 +362,11 @@ export default function NewExamPage() {
                 <Label>Student Exam Papers *</Label>
                 <div className="space-y-2">
                   <input
+                    ref={studentInputRef}
                     type="file"
                     accept="application/pdf"
                     multiple
+                    className="hidden"
                     disabled={isUploadingStudent}
                     onChange={async (e) => {
                       const files = Array.from(e.target.files || []);
@@ -370,6 +385,17 @@ export default function NewExamPage() {
                       await startStudentUpload(valid);
                     }}
                   />
+
+                  {studentUploads.length === 0 && (
+                    <Button
+                      type="button"
+                      onClick={() => studentInputRef.current?.click()}
+                      disabled={isUploadingStudent}
+                    >
+                      Choose files
+                    </Button>
+                  )}
+
                   {isUploadingStudent && (
                     <div className="flex items-center gap-2 text-sm text-zinc-500">
                       <Loader2 className="h-4 w-4 animate-spin" /> Uploading {studentFiles.length} file(s)...
@@ -379,11 +405,14 @@ export default function NewExamPage() {
                   {studentUploads.length > 0 && (
                     <ul className="space-y-1">
                       {studentUploads.map((s, idx) => (
-                        <li key={idx} className="flex items-center justify-between rounded-lg border p-2">
-                          <div className="flex items-center gap-2 text-sm truncate">
+                        <li key={idx} className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                             <FileText className="h-4 w-4 text-zinc-500 shrink-0" />
-                            <span className="truncate">{s.name}</span>
-                            <span className="text-xs text-zinc-500 shrink-0">({Math.round(s.size/1024)} KB)</span>
+                            <div className="truncate">
+                              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">{s.name}</p>
+                              <p className="text-xs text-zinc-500">({Math.round(s.size/1024)} KB)</p>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <a href={s.url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 flex items-center gap-1">
