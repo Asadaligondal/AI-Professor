@@ -3,28 +3,33 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Upload, Loader2, CheckCircle2, FileText, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import RubricBuilder from "@/components/rubric/RubricBuilder";
 import { Badge } from "@/components/ui/badge";
-import { saveAnswerKeyFile, saveStudentPaperFile } from "@/lib/firestore-client";
+import { saveAnswerKeyFile, saveStudentPaperFile, createExam } from "@/lib/firestore-client";
 import { gradingService, examService } from "@/lib/api";
 import { useUploadThing } from "@/lib/uploadthing";
 import { normalizeRubric } from "@/lib/rubric/rubricUtils";
 import buildGradingPrompt from "@/lib/grading/buildGradingPrompt";
+import { listClassrooms } from "@/lib/firestore/classrooms";
+import { listSubjects } from "@/lib/firestore/subjects";
 
 export default function NewExamPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [examTitle, setExamTitle] = useState("");
   const [examDescription, setExamDescription] = useState("");
+  const [selectedClassroomId, setSelectedClassroomId] = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
   
   const [professorKey, setProfessorKey] = useState<File | null>(null);
   const [answerKeyUpload, setAnswerKeyUpload] = useState<{ url: string; name: string; size: number; key?: string } | null>(null);
@@ -35,6 +40,19 @@ export default function NewExamPage() {
   const [rubric, setRubric] = useState<{ numQuestions: number; questions: { marks: number; notes?: string }[] }>({ numQuestions: 0, questions: [] });
   const answerInputRef = useRef<HTMLInputElement | null>(null);
   const studentInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Query for classrooms and subjects
+  const { data: classrooms, isLoading: classroomsLoading } = useQuery({
+    queryKey: ["classrooms", user?.uid],
+    queryFn: () => listClassrooms(user!.uid),
+    enabled: !!user,
+  });
+
+  const { data: subjects, isLoading: subjectsLoading } = useQuery({
+    queryKey: ["subjects", selectedClassroomId],
+    queryFn: () => listSubjects(selectedClassroomId),
+    enabled: !!selectedClassroomId,
+  });
 
   // UploadThing programmatic uploaders
   const { startUpload: startAnswerKeyUpload, isUploading: isUploadingAnswerKey } = useUploadThing("answerKey", {
@@ -117,6 +135,21 @@ export default function NewExamPage() {
           } catch (err) {
             // ignore logging failures
           }
+          
+          // Save exam metadata to Firestore
+          try {
+            await createExam({
+              title: examTitle,
+              description: examDescription,
+              ownerId: user?.uid,
+              classroomId: selectedClassroomId,
+              subjectId: selectedSubjectId,
+              answerKeyFile: answerKeyUpload
+            });
+            console.log("✅ Saved exam metadata to Firestore with classroom/subject");
+          } catch (err) {
+            console.error("❌ Failed to save exam metadata:", err);
+          }
         } catch (err) {
           console.error("❌ Failed to save URLs:", err);
         }
@@ -152,6 +185,11 @@ export default function NewExamPage() {
       return;
     }
 
+    if (!selectedClassroomId || !selectedSubjectId) {
+      toast.error("Please select both classroom and subject");
+      return;
+    }
+
     if (!answerKeyUpload) {
       toast.error("Upload professor answer key first");
       return;
@@ -183,6 +221,14 @@ export default function NewExamPage() {
         formData.append("student_papers", file);
       });
       formData.append("exam_title", examTitle);
+      
+      // Add classroom and subject IDs
+      if (selectedClassroomId) {
+        formData.append("classroom_id", selectedClassroomId);
+      }
+      if (selectedSubjectId) {
+        formData.append("subject_id", selectedSubjectId);
+      }
       
       // Attach rubric (normalized) if present and build grading prompt
       let normalized: any = null;
@@ -218,6 +264,14 @@ export default function NewExamPage() {
         formData.append("student_papers", file);
       });
       formData.append("exam_title", examTitle);
+      
+      // Add classroom and subject IDs (fallback)
+      if (selectedClassroomId) {
+        formData.append("classroom_id", selectedClassroomId);
+      }
+      if (selectedSubjectId) {
+        formData.append("subject_id", selectedSubjectId);
+      }
       
       // fallback: attach grading prompt even when previous Firestore save failed
       try {
@@ -261,6 +315,44 @@ export default function NewExamPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Classroom & Subject Selection */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Classroom *</Label>
+                  <Select value={selectedClassroomId} onValueChange={(val) => {
+                    setSelectedClassroomId(val);
+                    setSelectedSubjectId(""); // Reset subject when classroom changes
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={classroomsLoading ? "Loading..." : "Select classroom"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(classrooms || []).map((classroom: any) => (
+                        <SelectItem key={classroom.id} value={classroom.id}>
+                          {classroom.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Subject *</Label>
+                  <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId} disabled={!selectedClassroomId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={subjectsLoading ? "Loading..." : selectedClassroomId ? "Select subject" : "Select classroom first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(subjects || []).map((subject: any) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}{subject.code ? ` (${subject.code})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">Exam Title *</Label>
                 <Input

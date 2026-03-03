@@ -37,6 +37,11 @@ const navigationItems = [
     icon: PlusCircle,
   },
   {
+    label: "Classrooms",
+    href: "/dashboard/classrooms",
+    icon: GraduationCap,
+  },
+  {
     label: "Review",
     href: "/dashboard/review",
     icon: FileSearch,

@@ -47,13 +47,15 @@ export async function getStudentPaperFile(examId: string, submissionId: string) 
   return data?.studentPaperFile || null;
 }
 
-export async function createExam(exam: { title: string; description?: string; marksPerQuestion?: number; ownerId?: string; answerKeyFile?: any }) {
+export async function createExam(exam: { title: string; description?: string; marksPerQuestion?: number; ownerId?: string; answerKeyFile?: any; classroomId?: string; subjectId?: string }) {
   const col = collection(db, "exams");
   const payload: any = {
     title: exam.title,
     description: exam.description || null,
     marksPerQuestion: exam.marksPerQuestion || null,
     ownerId: exam.ownerId || null,
+    classroom_id: exam.classroomId || null,
+    subject_id: exam.subjectId || null,
     createdAt: serverTimestamp(),
   };
   if (exam.answerKeyFile) payload.answerKeyFile = { ...exam.answerKeyFile, uploadedAt: serverTimestamp() };
