@@ -185,6 +185,8 @@ class FirestoreHelper:
         answer_key_data: Dict[str, Any],
         max_marks: int,
         rubric: Optional[Dict[str, Any]] = None,
+        classroom_id: Optional[str] = None,
+        subject_id: Optional[str] = None,
     ) -> str:
         """Create a new exam and return its document ID"""
         db = get_db()
@@ -194,6 +196,8 @@ class FirestoreHelper:
             "answer_key_url": answer_key_url,
             "answer_key_data": answer_key_data,
             "max_marks": max_marks,
+            "classroom_id": classroom_id,
+            "subject_id": subject_id,
             "created_at": SERVER_TIMESTAMP,
             "updated_at": SERVER_TIMESTAMP
         }

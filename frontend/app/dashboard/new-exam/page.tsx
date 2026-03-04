@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import RubricBuilder from "@/components/rubric/RubricBuilder";
 import { Badge } from "@/components/ui/badge";
-import { saveAnswerKeyFile, saveStudentPaperFile, createExam } from "@/lib/firestore-client";
+import { saveAnswerKeyFile, saveStudentPaperFile, updateExamClassroomLink } from "@/lib/firestore-client";
 import { gradingService, examService } from "@/lib/api";
 import { useUploadThing } from "@/lib/uploadthing";
 import { normalizeRubric } from "@/lib/rubric/rubricUtils";
@@ -136,19 +136,19 @@ export default function NewExamPage() {
             // ignore logging failures
           }
           
-          // Save exam metadata to Firestore
+          // Merge classroom/subject metadata into the backend-created exam document
+          // (instead of creating a separate duplicate exam doc)
           try {
-            await createExam({
-              title: examTitle,
-              description: examDescription,
-              ownerId: user?.uid,
+            await updateExamClassroomLink(data.exam_id.toString(), {
               classroomId: selectedClassroomId,
               subjectId: selectedSubjectId,
-              answerKeyFile: answerKeyUpload
+              ownerId: user?.uid,
+              description: examDescription,
+              answerKeyFile: answerKeyUpload,
             });
-            console.log("✅ Saved exam metadata to Firestore with classroom/subject");
+            console.log("✅ Linked exam to classroom/subject (merge update)");
           } catch (err) {
-            console.error("❌ Failed to save exam metadata:", err);
+            console.error("❌ Failed to link exam to classroom:", err);
           }
         } catch (err) {
           console.error("❌ Failed to save URLs:", err);

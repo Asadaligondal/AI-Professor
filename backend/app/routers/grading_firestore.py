@@ -118,6 +118,8 @@ async def grade_exam(
     ),
     user_id: str = Form(..., description="Clerk user ID"),
     rubric: str = Form(None, description="Optional rubric JSON from client"),
+    classroom_id: str = Form(None, description="Classroom ID to link exam to"),
+    subject_id: str = Form(None, description="Subject ID to link exam to"),
     grading_service: AIGradingService = Depends(get_ai_grading_service)
 ):
     """
@@ -217,6 +219,8 @@ async def grade_exam(
             answer_key_data=answer_key_data,
             max_marks=max_marks,
             rubric=parsed_rubric,
+            classroom_id=classroom_id,
+            subject_id=subject_id,
         )
         # Mark exam as in-progress so it shows up in the Review queue
         try:

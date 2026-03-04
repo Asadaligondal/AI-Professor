@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, BarChart3 } from "lucide-react";
 import { getClassroom } from "@/lib/firestore/classrooms";
 import { listSubjects, createSubject } from "@/lib/firestore/subjects";
 import StudentsSection from "@/components/classrooms/StudentsSection";
@@ -93,7 +93,16 @@ export default function ClassroomDetailPage() {
             <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{classroom?.name || 'Classroom'}</h2>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{classroom?.subject || ''}{classroom?.section ? ` • ${classroom.section}` : ''}</p>
           </div>
-          <Badge variant="secondary">Classroom v1</Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/classrooms/${classroomId}/performance`)}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              View Performance
+            </Button>
+            <Badge variant="secondary">Classroom v1</Badge>
+          </div>
         </div>
 
         <Card className="mb-4">

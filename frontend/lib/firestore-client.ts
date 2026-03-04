@@ -64,6 +64,38 @@ export async function createExam(exam: { title: string; description?: string; ma
   return ref.id;
 }
 
+/**
+ * Merge classroom/subject metadata into an existing exam document
+ * created by the backend grading endpoint. This avoids creating
+ * a duplicate exam doc and ensures the backend-created exam
+ * (which has linked submissions) also carries classroom_id and subject_id.
+ */
+export async function updateExamClassroomLink(
+  examId: string,
+  meta: {
+    classroomId?: string;
+    subjectId?: string;
+    ownerId?: string;
+    description?: string;
+    answerKeyFile?: any;
+  },
+) {
+  const ref = doc(db, "exams", String(examId));
+  const payload: any = {
+    classroom_id: meta.classroomId || null,
+    subject_id: meta.subjectId || null,
+    ownerId: meta.ownerId || null,
+    description: meta.description || null,
+  };
+  if (meta.answerKeyFile) {
+    payload.answerKeyFile = {
+      ...meta.answerKeyFile,
+      uploadedAt: new Date().toISOString(),
+    };
+  }
+  await setDoc(ref, payload, { merge: true });
+}
+
 export async function createSubmission(examId: string, submission: { studentPaperFile: any; status?: string }) {
   const col = collection(db, "exams", String(examId), "submissions");
   const payload: any = {
