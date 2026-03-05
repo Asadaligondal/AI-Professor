@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Eye, FileText, PlusCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, FileText, PlusCircle, Loader2, ArrowRight } from "lucide-react";
 import { examService } from "@/lib/api";
 
 export default function ResultsIndexPage() {
@@ -64,16 +64,18 @@ export default function ResultsIndexPage() {
       </div>
 
       {!visibleExams || visibleExams.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-md bg-white dark:bg-zinc-900">
           <CardContent className="py-12 text-center">
-            <FileText className="h-16 w-16 text-zinc-400 mx-auto mb-4" />
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 flex items-center justify-center">
+              <FileText className="h-8 w-8 text-emerald-500" />
+            </div>
             <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
               No exams yet
             </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+            <p className="text-zinc-500 mb-6">
               Create your first exam to start seeing results
             </p>
-            <Button onClick={() => router.push("/dashboard/new-exam")}>
+            <Button onClick={() => router.push("/dashboard/new-exam")} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
               <PlusCircle className="mr-2 h-4 w-4" />
               Create New Exam
             </Button>
@@ -84,12 +86,12 @@ export default function ResultsIndexPage() {
           {visibleExams.map((exam: any) => (
             <Card
               key={exam.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer"
+              className="border-0 shadow-md bg-white dark:bg-zinc-900 hover:shadow-lg transition-all cursor-pointer group"
               onClick={() => router.push(`/dashboard/results/${exam.id}`)}
             >
               <CardHeader>
                 <CardTitle className="text-lg">{exam.title}</CardTitle>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="text-sm text-zinc-500">
                   {exam.description || "No description provided"}
                 </p>
               </CardHeader>
@@ -97,7 +99,7 @@ export default function ResultsIndexPage() {
                 <div className="flex items-center justify-between mb-4 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-500">Status:</span>
-                    <Badge variant="secondary">{exam.status ? exam.status : (exam.reviewed ? 'Completed' : 'Unknown')}</Badge>
+                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400">{exam.status ? exam.status : (exam.reviewed ? 'Completed' : 'Unknown')}</Badge>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-500">Total:</span>
@@ -108,7 +110,7 @@ export default function ResultsIndexPage() {
                 </div>
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/dashboard/results/${exam.id}`);
@@ -116,6 +118,7 @@ export default function ResultsIndexPage() {
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   View Results
+                  <ArrowRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Button>
               </CardContent>
             </Card>

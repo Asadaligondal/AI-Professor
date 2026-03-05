@@ -25,11 +25,13 @@ export function Navbar({}: NavbarProps = {}) {
   });
 
   return (
-    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sticky top-0 z-50">
+    <header className="border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80 sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity">
-          <GraduationCap className="h-7 w-7 text-blue-600" />
+          <div className="rounded-lg p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+            <GraduationCap className="h-5 w-5" />
+          </div>
           <div>
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
               AI Exam Grader
@@ -67,7 +69,7 @@ export function Navbar({}: NavbarProps = {}) {
 
               <Button
                 onClick={() => router.push("/pricing")}
-                className="hidden md:flex h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700"
+                className="hidden md:flex h-8 px-3 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
                 size="sm"
               >
                 <Crown className="mr-1.5 h-3.5 w-3.5" />
@@ -113,7 +115,7 @@ export function Navbar({}: NavbarProps = {}) {
 
               <Button
                 onClick={() => router.push("/signup")}
-                className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700"
+                className="h-8 px-3 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
                 size="sm"
               >
                 Get Started

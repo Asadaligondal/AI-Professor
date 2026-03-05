@@ -93,29 +93,32 @@ export default function PricingPage() {
 
   return (
     <AppShell pageTitle="Pricing">
-      <div className="min-h-screen bg-gray-50 dark:from-zinc-900 dark:to-black">
+      <div className="min-h-screen bg-zinc-50 dark:from-zinc-900 dark:to-black">
         {/* Main Content */}
         <main className="container mx-auto px-4 py-12">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">Choose Your Plan</h2>
-            <p className="text-xl text-zinc-600 dark:text-zinc-400">Upgrade to unlock more exams and advanced features</p>
-            <p className="text-sm text-zinc-500 mt-2">Pricing in Pakistani Rupees (PKR) • Manual verification via EasyPaisa</p>
+            <h2 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4 tracking-tight">Choose Your Plan</h2>
+            <p className="text-lg text-zinc-500">Upgrade to unlock more exams and advanced features</p>
+            <p className="text-sm text-zinc-400 mt-2">Pricing in Pakistani Rupees (PKR) • Manual verification via EasyPaisa</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {plans.map((plan) => (
               <Card
                 key={plan.id}
-                className={`relative ${plan.popular ? "border-2 border-blue-500 shadow-lg" : "border-zinc-200 dark:border-zinc-800"}`}>
+                className={`relative border-0 shadow-md bg-white dark:bg-zinc-900 overflow-hidden ${plan.popular ? "ring-2 ring-blue-500 shadow-lg shadow-blue-500/10" : ""}`}>
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
+                  <div className="absolute -top-0 inset-x-0"><div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" /></div>
+                )}
+                {plan.popular && (
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-1 rounded-full text-xs font-semibold shadow-sm">Most Popular</span>
                   </div>
                 )}
 
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">{plan.icon}</div>
+                    <div className={`p-2 rounded-lg ${plan.popular ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'} shadow-sm`}>{plan.icon}</div>
                     {plan.popular && <Crown className="h-5 w-5 text-yellow-500" />}
                   </div>
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
@@ -136,7 +139,7 @@ export default function PricingPage() {
                 </CardContent>
 
                 <CardFooter>
-                  <Button className="w-full" variant={plan.popular ? "default" : "outline"} onClick={() => handleUpgrade(plan.id, plan.name, plan.price)} disabled={loadingPlan !== null}>
+                  <Button className={`w-full ${plan.popular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm' : ''}`} variant={plan.popular ? "default" : "outline"} onClick={() => handleUpgrade(plan.id, plan.name, plan.price)} disabled={loadingPlan !== null}>
                     {loadingPlan === plan.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : plan.id === "free" ? "Current Plan" : "Upgrade Now"}
                   </Button>
                 </CardFooter>

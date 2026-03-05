@@ -1,32 +1,61 @@
 "use client";
 
+import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppShell } from "@/components/layout/AppShell";
-import { PlusCircle, FileText, GraduationCap, TrendingUp, Loader2 } from "lucide-react";
+import { PlusCircle, FileText, GraduationCap, TrendingUp, Loader2, ArrowRight, Upload, BarChart3, Download } from "lucide-react";
 import { dashboardService } from "@/lib/api";
+
+/* ── Gradient KPI Card ──────────────────────────────────────────────────── */
+function GradientKpiCard({
+  icon, label, value, subtitle, gradient, isLoading,
+}: {
+  icon: React.ReactNode; label: string; value: string | number; subtitle?: string; gradient: string; isLoading?: boolean;
+}) {
+  return (
+    <Card className="border-0 shadow-md overflow-hidden relative bg-white dark:bg-zinc-900">
+      <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${gradient}`} />
+      <CardContent className="flex items-center gap-3 py-5 pt-6">
+        <div className={`rounded-lg p-2.5 bg-gradient-to-br ${gradient} text-white shadow-sm`}>
+          {icon}
+        </div>
+        <div>
+          <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide">{label}</p>
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-zinc-400 mt-1" />
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tabular-nums">{value}</p>
+              {subtitle && <p className="text-[11px] text-zinc-400">{subtitle}</p>}
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Fetch dashboard stats from backend
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["dashboard-stats", user?.uid],
     queryFn: () => dashboardService.getStats(user!.uid),
     enabled: !!user,
-    refetchOnMount: "always", // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    staleTime: 0, // Consider data stale immediately
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
+        <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -35,89 +64,51 @@ export default function DashboardPage() {
     <AppShell pageTitle="Dashboard">
       {/* Welcome Section */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">
           Welcome back!
         </h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-zinc-500">
           Grade exams with AI-powered handwriting recognition
         </p>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats — Gradient KPI */}
       <div className="mb-8 grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
-            <FileText className="h-4 w-4 text-zinc-600" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingStats ? (
-              <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats?.total_exams || 0}</div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                  {stats?.total_exams === 0 ? "No exams created yet" : "Exams created"}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Papers Graded
-            </CardTitle>
-            <GraduationCap className="h-4 w-4 text-zinc-600" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingStats ? (
-              <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats?.total_submissions || 0}</div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                  {stats?.total_submissions === 0 
-                    ? "Start grading to see stats" 
-                    : `From ${stats?.total_students || 0} students`}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Average Score
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-zinc-600" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingStats ? (
-              <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {stats?.average_grade ? `${stats.average_grade.toFixed(1)}%` : "--"}
-                </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                  {stats?.average_grade ? "Across all submissions" : "No data available"}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <GradientKpiCard
+          icon={<FileText className="h-5 w-5" />}
+          label="Total Exams"
+          value={stats?.total_exams || 0}
+          subtitle={stats?.total_exams === 0 ? "No exams created yet" : "Exams created"}
+          gradient="from-blue-500 to-indigo-600"
+          isLoading={isLoadingStats}
+        />
+        <GradientKpiCard
+          icon={<GraduationCap className="h-5 w-5" />}
+          label="Papers Graded"
+          value={stats?.total_submissions || 0}
+          subtitle={stats?.total_submissions === 0 ? "Start grading to see stats" : `From ${stats?.total_students || 0} students`}
+          gradient="from-emerald-500 to-teal-600"
+          isLoading={isLoadingStats}
+        />
+        <GradientKpiCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label="Average Score"
+          value={stats?.average_grade ? `${stats.average_grade.toFixed(1)}%` : "--"}
+          subtitle={stats?.average_grade ? "Across all submissions" : "No data available"}
+          gradient="from-violet-500 to-purple-600"
+          isLoading={isLoadingStats}
+        />
       </div>
 
       {/* Main Actions */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Create New Exam Card */}
-        <Card className="border-2 border-dashed border-zinc-300 hover:border-zinc-400 transition-colors dark:border-zinc-700 dark:hover:border-zinc-600">
+        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 hover:shadow-lg transition-all group">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PlusCircle className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <div className="rounded-lg p-2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                <PlusCircle className="h-5 w-5" />
+              </div>
               Create New Exam
             </CardTitle>
             <CardDescription>
@@ -127,20 +118,23 @@ export default function DashboardPage() {
           <CardContent>
             <Button
               onClick={() => router.push("/dashboard/new-exam")}
-              className="w-full"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
               size="lg"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               New Exam
+              <ArrowRight className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Button>
           </CardContent>
         </Card>
 
         {/* View Exams Card */}
-        <Card>
+        <Card className="border-0 shadow-md bg-white dark:bg-zinc-900 hover:shadow-lg transition-all group">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+              <div className="rounded-lg p-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
+                <FileText className="h-5 w-5" />
+              </div>
               Your Exams
             </CardTitle>
             <CardDescription>
@@ -156,67 +150,37 @@ export default function DashboardPage() {
             >
               <FileText className="mr-2 h-4 w-4" />
               Go to Results
+              <ArrowRight className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Button>
           </CardContent>
         </Card>
       </div>
 
       {/* Getting Started Guide */}
-      <Card className="mt-8">
+      <Card className="mt-8 border-0 shadow-md bg-white dark:bg-zinc-900">
         <CardHeader>
-          <CardTitle>Getting Started</CardTitle>
+          <CardTitle className="text-lg font-semibold">Getting Started</CardTitle>
           <CardDescription>
             Follow these steps to grade your first exam
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-50 dark:text-zinc-900">
-              1
+        <CardContent className="space-y-5">
+          {[
+            { step: 1, title: "Upload Professor's Answer Key", desc: "Upload a clear PDF of the professor's handwritten or typed answer key", gradient: "from-blue-500 to-indigo-600", icon: <Upload className="h-4 w-4" /> },
+            { step: 2, title: "Upload Student Papers", desc: "Upload student exam papers (can be a batch of multiple students)", gradient: "from-emerald-500 to-teal-600", icon: <FileText className="h-4 w-4" /> },
+            { step: 3, title: "AI Grades Automatically", desc: "Our AI analyzes handwriting, compares answers, and provides detailed feedback", gradient: "from-violet-500 to-purple-600", icon: <BarChart3 className="h-4 w-4" /> },
+            { step: 4, title: "Review and Export Results", desc: "Review grades, edit if needed, and export to Excel or PDF", gradient: "from-amber-500 to-orange-600", icon: <Download className="h-4 w-4" /> },
+          ].map((item) => (
+            <div key={item.step} className="flex items-start gap-3">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${item.gradient} text-sm font-bold text-white shadow-sm shrink-0`}>
+                {item.step}
+              </div>
+              <div>
+                <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">{item.title}</h4>
+                <p className="text-sm text-zinc-500">{item.desc}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold">Upload Professor's Answer Key</h4>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Upload a clear PDF of the professor's handwritten or typed answer key
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-50 dark:text-zinc-900">
-              2
-            </div>
-            <div>
-              <h4 className="font-semibold">Upload Student Papers</h4>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Upload student exam papers (can be a batch of multiple students)
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-50 dark:text-zinc-900">
-              3
-            </div>
-            <div>
-              <h4 className="font-semibold">AI Grades Automatically</h4>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Our AI analyzes handwriting, compares answers, and provides detailed feedback
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-50 dark:text-zinc-900">
-              4
-            </div>
-            <div>
-              <h4 className="font-semibold">Review and Export Results</h4>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Review grades, edit if needed, and export to Excel or PDF
-              </p>
-            </div>
-          </div>
+          ))}
         </CardContent>
       </Card>
     </AppShell>

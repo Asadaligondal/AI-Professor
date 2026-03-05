@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, FileText, Users, PlusCircle, Loader2, Eye } from "lucide-react";
+import { ArrowLeft, FileText, Users, PlusCircle, Loader2, Eye, ArrowRight } from "lucide-react";
 import { examService } from "@/lib/api";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -57,16 +57,18 @@ export default function ExamsListPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {!exams || exams.length === 0 ? (
-          <Card className="max-w-2xl mx-auto">
+          <Card className="max-w-2xl mx-auto border-0 shadow-md bg-white dark:bg-zinc-900">
             <CardContent className="py-12 text-center">
-              <FileText className="h-16 w-16 text-zinc-400 mx-auto mb-4" />
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center">
+                <FileText className="h-8 w-8 text-blue-500" />
+              </div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 No exams yet
               </h2>
-              <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+              <p className="text-zinc-500 mb-6">
                 Create your first exam to start grading with AI
               </p>
-              <Button onClick={() => router.push("/dashboard/new-exam")}>
+              <Button onClick={() => router.push("/dashboard/new-exam")} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create New Exam
               </Button>
@@ -77,11 +79,11 @@ export default function ExamsListPage() {
             {exams.map((exam) => (
               <Card
                 key={exam.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="border-0 shadow-md bg-white dark:bg-zinc-900 hover:shadow-lg transition-all cursor-pointer group"
                 onClick={() => router.push(`/exams/${exam.id}`)}
               >
                 <CardHeader>
-                  <CardTitle className="line-clamp-2">{exam.title}</CardTitle>
+                  <CardTitle className="line-clamp-2 text-zinc-900 dark:text-zinc-50">{exam.title}</CardTitle>
                   <CardDescription>
                     {new Date(exam.created_at).toLocaleDateString()}
                   </CardDescription>
@@ -89,8 +91,8 @@ export default function ExamsListPage() {
                 <CardContent>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                        <Users className="h-4 w-4" />
+                      <span className="text-zinc-500 flex items-center gap-2">
+                        <Users className="h-4 w-4 text-blue-500" />
                         Submissions
                       </span>
                       <span className="font-semibold text-zinc-900 dark:text-zinc-50">
@@ -98,8 +100,8 @@ export default function ExamsListPage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
+                      <span className="text-zinc-500 flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-emerald-500" />
                         Total Marks
                       </span>
                       <span className="font-semibold text-zinc-900 dark:text-zinc-50">
@@ -109,7 +111,7 @@ export default function ExamsListPage() {
                   </div>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       router.push(`/exams/${exam.id}`);
@@ -117,6 +119,7 @@ export default function ExamsListPage() {
                   >
                     <Eye className="mr-2 h-4 w-4" />
                     View Results
+                    <ArrowRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Button>
                 </CardContent>
               </Card>

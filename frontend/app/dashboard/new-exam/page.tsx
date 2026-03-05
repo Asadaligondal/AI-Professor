@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, Loader2, CheckCircle2, FileText, X, ExternalLink } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, CheckCircle2, FileText, X, ExternalLink, BookOpen, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import RubricBuilder from "@/components/rubric/RubricBuilder";
@@ -30,7 +30,7 @@ export default function NewExamPage() {
   const [examDescription, setExamDescription] = useState("");
   const [selectedClassroomId, setSelectedClassroomId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
-  
+
   const [professorKey, setProfessorKey] = useState<File | null>(null);
   const [answerKeyUpload, setAnswerKeyUpload] = useState<{ url: string; name: string; size: number; key?: string } | null>(null);
   const [studentUploads, setStudentUploads] = useState<{ url: string; name: string; size: number; key?: string }[]>([]);
@@ -106,18 +106,18 @@ export default function NewExamPage() {
       toast.success(
         `Successfully graded ${data.students_graded} student(s)!`
       );
-      
+
       console.log("Grading response:", data);
       console.log("Exam ID:", data.exam_id);
-      
+
       // Save UploadThing URLs to Firestore
       if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "" && answerKeyUpload) {
         try {
           await saveAnswerKeyFile(data.exam_id.toString(), answerKeyUpload);
           console.log("✅ Saved answer key URL:", answerKeyUpload.url);
-          
+
           const submissions = await examService.getExamSubmissions(data.exam_id);
-          
+
           for (let i = 0; i < Math.min(submissions.length, studentUploads.length); i++) {
             const submission = submissions[i];
             const studentUpload = studentUploads[i];
@@ -135,9 +135,8 @@ export default function NewExamPage() {
           } catch (err) {
             // ignore logging failures
           }
-          
+
           // Merge classroom/subject metadata into the backend-created exam document
-          // (instead of creating a separate duplicate exam doc)
           try {
             await updateExamClassroomLink(data.exam_id.toString(), {
               classroomId: selectedClassroomId,
@@ -154,10 +153,9 @@ export default function NewExamPage() {
           console.error("❌ Failed to save URLs:", err);
         }
       }
-      
+
       if (data.exam_id && data.exam_id !== "NaN" && data.exam_id !== "") {
         console.log("Redirecting to Review for exam:", data.exam_id);
-        // Redirect to the Review workspace so teacher can edit before publishing to Results
         router.push(`/dashboard/review?examId=${data.exam_id}`);
       } else {
         console.warn("No valid exam_id in response, redirecting to dashboard");
@@ -168,7 +166,7 @@ export default function NewExamPage() {
     onError: (error: any) => {
       const errorMessage = error.response?.data?.detail || "Failed to grade exam. Please try again.";
       toast.error(errorMessage);
-      
+
       if (error.response?.status === 403 && errorMessage.includes("Insufficient credits")) {
         setTimeout(() => {
           router.push("/pricing");
@@ -221,7 +219,7 @@ export default function NewExamPage() {
         formData.append("student_papers", file);
       });
       formData.append("exam_title", examTitle);
-      
+
       // Add classroom and subject IDs
       if (selectedClassroomId) {
         formData.append("classroom_id", selectedClassroomId);
@@ -229,7 +227,7 @@ export default function NewExamPage() {
       if (selectedSubjectId) {
         formData.append("subject_id", selectedSubjectId);
       }
-      
+
       // Attach rubric (normalized) if present and build grading prompt
       let normalized: any = null;
       try {
@@ -264,7 +262,7 @@ export default function NewExamPage() {
         formData.append("student_papers", file);
       });
       formData.append("exam_title", examTitle);
-      
+
       // Add classroom and subject IDs (fallback)
       if (selectedClassroomId) {
         formData.append("classroom_id", selectedClassroomId);
@@ -272,7 +270,7 @@ export default function NewExamPage() {
       if (selectedSubjectId) {
         formData.append("subject_id", selectedSubjectId);
       }
-      
+
       // fallback: attach grading prompt even when previous Firestore save failed
       try {
         const normalizedFallback = normalizeRubric(rubric as any);
@@ -287,172 +285,189 @@ export default function NewExamPage() {
       } catch (e) {
         // ignore
       }
-      
+
       gradingMutation.mutate(formData);
     } finally {
       setUploading(false);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <AppShell pageTitle="Create New Exam">
-      <Button
-        variant="ghost"
-        onClick={() => router.push("/dashboard")}
-        className="mb-6"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Dashboard
-      </Button>
+      <div className="container mx-auto px-4 py-6 space-y-5">
+        {/* ── Header ───────────────────────────────────────────────────── */}
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2 mb-2 text-zinc-500 hover:text-zinc-900"
+            onClick={() => router.push("/dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+              <FileText className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 tracking-tight">
+                Create New Exam
+              </h2>
+              <p className="text-sm text-zinc-500">
+                Upload documents, configure rubric, and let AI handle the grading.
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
-          {/* Exam Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Exam Information</CardTitle>
-              <CardDescription>
-                Basic details about the exam
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Classroom & Subject Selection */}
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Classroom *</Label>
-                  <Select value={selectedClassroomId} onValueChange={(val) => {
-                    setSelectedClassroomId(val);
-                    setSelectedSubjectId(""); // Reset subject when classroom changes
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={classroomsLoading ? "Loading..." : "Select classroom"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(classrooms || []).map((classroom: any) => (
-                        <SelectItem key={classroom.id} value={classroom.id}>
-                          {classroom.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Subject *</Label>
-                  <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId} disabled={!selectedClassroomId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={subjectsLoading ? "Loading..." : selectedClassroomId ? "Select subject" : "Select classroom first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(subjects || []).map((subject: any) => (
-                        <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name}{subject.code ? ` (${subject.code})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="title">Exam Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Mathematics Midterm - Fall 2025"
-                  value={examTitle}
-                  onChange={(e) => setExamTitle(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Add any notes or context about this exam..."
-                  value={examDescription}
-                  onChange={(e) => setExamDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              
-            </CardContent>
-          </Card>
-
-          {/* File Uploads */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Documents</CardTitle>
-              <CardDescription>
-                Upload PDF files for grading (maximum 50MB each)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Professor's Answer Key */}
-              <div className="space-y-2">
-                <Label>Professor&apos;s Answer Key *</Label>
-                {answerKeyUpload ? (
-                  <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                    <FileText className="h-4 w-4 text-zinc-500 shrink-0" />
-                    <span className="text-sm font-medium truncate">{answerKeyUpload.name}</span>
-                    <span className="text-xs text-zinc-500">({Math.round(answerKeyUpload.size / 1024)} KB)</span>
-                    <a href={answerKeyUpload.url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 flex items-center gap-1 ml-auto shrink-0">
-                      Open <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <button
-                      type="button"
-                      className="text-sm text-rose-600 shrink-0"
-                      onClick={() => {
-                        setAnswerKeyUpload(null);
-                        setProfessorKey(null);
-                      }}
-                    >
-                      Replace
-                    </button>
+        {/* ── Form ─────────────────────────────────────────────────────── */}
+        <form onSubmit={handleSubmit}>
+          {/* Two-column: Details + Uploads */}
+          <div className="grid lg:grid-cols-2 gap-4 mb-4">
+            {/* ── Exam Details ───────────────────────────────────────── */}
+            <Card className="border-0 shadow-md bg-white dark:bg-zinc-900 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-600" />
+              <CardHeader className="pb-3 pt-5">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="rounded-lg p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                    <BookOpen className="h-4 w-4" />
                   </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <input
-                      ref={answerInputRef}
-                      type="file"
-                      accept="application/pdf"
-                      className="hidden"
-                      disabled={isUploadingAnswerKey}
-                      onChange={async (e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        if (f.size > 50 * 1024 * 1024) {
-                          toast.error("File exceeds 50MB limit");
-                          return;
-                        }
-                        setProfessorKey(f);
-                        setUploading(true);
-                        await startAnswerKeyUpload([f]);
-                      }}
-                    />
+                  Exam Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Classroom *</Label>
+                    <Select value={selectedClassroomId} onValueChange={(val) => {
+                      setSelectedClassroomId(val);
+                      setSelectedSubjectId("");
+                    }}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder={classroomsLoading ? "Loading..." : "Select classroom"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(classrooms || []).map((classroom: any) => (
+                          <SelectItem key={classroom.id} value={classroom.id}>
+                            {classroom.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Subject *</Label>
+                    <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId} disabled={!selectedClassroomId}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder={subjectsLoading ? "Loading..." : selectedClassroomId ? "Select subject" : "Select classroom first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(subjects || []).map((subject: any) => (
+                          <SelectItem key={subject.id} value={subject.id}>
+                            {subject.name}{subject.code ? ` (${subject.code})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Exam Title *</Label>
+                  <Input
+                    id="title"
+                    className="h-9"
+                    placeholder="e.g., Mathematics Midterm - Fall 2025"
+                    value={examTitle}
+                    onChange={(e) => setExamTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Add any notes or context about this exam..."
+                    value={examDescription}
+                    onChange={(e) => setExamDescription(e.target.value)}
+                    rows={2}
+                    className="resize-none"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-                    <Button
-                      type="button"
+            {/* ── Upload Documents ────────────────────────────────────── */}
+            <Card className="border-0 shadow-md bg-white dark:bg-zinc-900 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-violet-500 to-purple-600" />
+              <CardHeader className="pb-3 pt-5">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="rounded-lg p-1.5 bg-violet-50 dark:bg-violet-900/20 text-violet-600">
+                    <Upload className="h-4 w-4" />
+                  </div>
+                  Upload Documents
+                </CardTitle>
+                <p className="text-xs text-zinc-400 mt-0.5">PDF files, max 50 MB each</p>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-0">
+                {/* Answer Key */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Answer Key *</Label>
+                  {answerKeyUpload ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-900/10 dark:border-emerald-800 px-3 py-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <FileText className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                      <span className="text-sm font-medium truncate flex-1">{answerKeyUpload.name}</span>
+                      <span className="text-[10px] text-zinc-400 shrink-0">({Math.round(answerKeyUpload.size / 1024)} KB)</span>
+                      <a href={answerKeyUpload.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 shrink-0">
+                        Open <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                      <button
+                        type="button"
+                        className="text-xs text-rose-500 hover:text-rose-600 shrink-0"
+                        onClick={() => { setAnswerKeyUpload(null); setProfessorKey(null); }}
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 hover:border-blue-400 dark:hover:border-blue-600 bg-zinc-50/50 dark:bg-zinc-800/30 py-5 cursor-pointer transition-colors"
                       onClick={() => answerInputRef.current?.click()}
-                      disabled={isUploadingAnswerKey}
                     >
-                      Choose file
-                    </Button>
+                      <input
+                        ref={answerInputRef}
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        disabled={isUploadingAnswerKey}
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          if (f.size > 50 * 1024 * 1024) { toast.error("File exceeds 50MB limit"); return; }
+                          setProfessorKey(f);
+                          setUploading(true);
+                          await startAnswerKeyUpload([f]);
+                        }}
+                      />
+                      {isUploadingAnswerKey ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-blue-500 mb-1" />
+                      ) : (
+                        <Upload className="h-5 w-5 text-zinc-400 mb-1" />
+                      )}
+                      <span className="text-xs text-zinc-500">{isUploadingAnswerKey ? "Uploading..." : "Click to upload answer key"}</span>
+                    </div>
+                  )}
+                </div>
 
-                    {isUploadingAnswerKey && (
-                      <div className="flex items-center gap-2 text-sm text-zinc-500">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Uploading...
-                      </div>
+                {/* Student Papers */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Student Papers *</Label>
+                    {studentUploads.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{studentUploads.length} file{studentUploads.length !== 1 ? "s" : ""}</Badge>
                     )}
                   </div>
-                )}
-              </div>
-
-              {/* Student Papers */}
-              <div className="space-y-2">
-                <Label>Student Exam Papers *</Label>
-                <div className="space-y-2">
                   <input
                     ref={studentInputRef}
                     type="file"
@@ -465,10 +480,7 @@ export default function NewExamPage() {
                       if (files.length === 0) return;
                       const valid: File[] = [];
                       for (const f of files) {
-                        if (f.size > 50 * 1024 * 1024) {
-                          toast.error(`${f.name} exceeds 50MB limit`);
-                          continue;
-                        }
+                        if (f.size > 50 * 1024 * 1024) { toast.error(`${f.name} exceeds 50MB limit`); continue; }
                         valid.push(f);
                       }
                       if (valid.length === 0) return;
@@ -478,73 +490,77 @@ export default function NewExamPage() {
                     }}
                   />
 
-                  {studentUploads.length === 0 && (
-                    <Button
-                      type="button"
+                  {studentUploads.length > 0 ? (
+                    <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+                      {studentUploads.map((s, idx) => (
+                        <div key={idx} className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-900/10 dark:border-emerald-800 px-2.5 py-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <p className="text-xs font-medium truncate flex-1">{s.name}</p>
+                          <span className="text-[10px] text-zinc-400 shrink-0">({Math.round(s.size / 1024)} KB)</span>
+                          <a href={s.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 flex items-center gap-0.5 shrink-0">
+                            Open <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                          <button
+                            type="button"
+                            className="text-rose-500 shrink-0"
+                            onClick={() => {
+                              setStudentUploads((arr) => arr.filter((_, i) => i !== idx));
+                              setStudentFiles((arr) => arr.filter((_, i) => i !== idx));
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 hover:border-violet-400 dark:hover:border-violet-600 bg-zinc-50/50 dark:bg-zinc-800/30 py-5 cursor-pointer transition-colors"
                       onClick={() => studentInputRef.current?.click()}
-                      disabled={isUploadingStudent}
                     >
-                      Choose files
-                    </Button>
-                  )}
-
-                  {isUploadingStudent && (
-                    <div className="flex items-center gap-2 text-sm text-zinc-500">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Uploading {studentFiles.length} file(s)...
+                      {isUploadingStudent ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-violet-500 mb-1" />
+                      ) : (
+                        <Upload className="h-5 w-5 text-zinc-400 mb-1" />
+                      )}
+                      <span className="text-xs text-zinc-500">{isUploadingStudent ? `Uploading ${studentFiles.length} file(s)...` : "Click to upload student papers"}</span>
                     </div>
                   )}
 
                   {studentUploads.length > 0 && (
-                    <ul className="space-y-1">
-                      {studentUploads.map((s, idx) => (
-                        <li key={idx} className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3">
-                          <div className="flex items-center gap-3">
-                            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                            <FileText className="h-4 w-4 text-zinc-500 shrink-0" />
-                            <div className="truncate">
-                              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">{s.name}</p>
-                              <p className="text-xs text-zinc-500">({Math.round(s.size/1024)} KB)</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <a href={s.url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 flex items-center gap-1">
-                              Open <ExternalLink className="h-3 w-3" />
-                            </a>
-                            <button 
-                              type="button" 
-                              className="text-sm text-rose-600" 
-                              onClick={() => {
-                                setStudentUploads((arr) => arr.filter((_, i) => i !== idx));
-                                setStudentFiles((arr) => arr.filter((_, i) => i !== idx));
-                              }}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {studentUploads.length === 0 && !isUploadingStudent && (
-                    <div className="text-sm text-zinc-500">No student papers uploaded yet</div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs h-8"
+                      onClick={() => studentInputRef.current?.click()}
+                      disabled={isUploadingStudent}
+                    >
+                      <Upload className="h-3 w-3 mr-1" />
+                      Add more papers
+                    </Button>
                   )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Rubric UI */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <CardTitle>Rubric</CardTitle>
-                  <CardDescription>Define marks and notes per question</CardDescription>
-                </div>
-                <Badge variant="secondary" className="text-xs">Rubric Policy v1</Badge>
+          {/* ── Rubric (full-width) ──────────────────────────────────── */}
+          <Card className="border-0 shadow-md bg-white dark:bg-zinc-900 overflow-hidden mb-4">
+            <div className="h-1 bg-gradient-to-r from-emerald-500 to-teal-600" />
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="rounded-lg p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  Rubric
+                </CardTitle>
+                <Badge variant="secondary" className="text-[10px]">Rubric Policy v1</Badge>
               </div>
+              <p className="text-xs text-zinc-400 mt-0.5">Define marks and notes per question for consistent grading</p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <RubricBuilder
                 value={rubric}
                 onChange={(next) => {
@@ -555,28 +571,29 @@ export default function NewExamPage() {
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
-          <Card>
-            <CardContent className="pt-6">
+          {/* ── Submit ───────────────────────────────────────────────── */}
+          <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-md overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <div className="p-4">
               {(uploading || gradingMutation.isPending) && (
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-600 dark:text-zinc-400">
+                <div className="mb-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">
                       {uploading ? "Uploading files..." : "AI is analyzing handwriting..."}
                     </span>
-                    <span className="font-medium">
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                       {uploading ? "Uploading" : (uploadProgress < 100 ? `${uploadProgress}%` : "Processing")}
                     </span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
                     <div
-                      className="h-full bg-zinc-900 transition-all duration-300 dark:bg-zinc-50"
+                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300 rounded-full"
                       style={{
                         width: uploading ? "100%" : (uploadProgress < 100 ? `${uploadProgress}%` : "100%"),
                       }}
                     />
                   </div>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-[10px] text-zinc-400">
                     {uploading ? "Uploading to cloud storage..." : "This may take 30-60 seconds for AI processing..."}
                   </p>
                 </div>
@@ -584,7 +601,7 @@ export default function NewExamPage() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
                 size="lg"
                 disabled={uploading || gradingMutation.isPending}
               >
@@ -595,14 +612,15 @@ export default function NewExamPage() {
                   </>
                 ) : (
                   <>
-                    <Upload className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Grade Exam with AI
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </form>
+      </div>
     </AppShell>
   );
 }

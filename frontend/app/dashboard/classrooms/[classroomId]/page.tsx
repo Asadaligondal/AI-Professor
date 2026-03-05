@@ -96,6 +96,7 @@ export default function ClassroomDetailPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200 text-violet-700 hover:from-violet-100 hover:to-purple-100 dark:from-violet-900/20 dark:to-purple-900/20 dark:border-violet-800 dark:text-violet-300"
               onClick={() => router.push(`/dashboard/classrooms/${classroomId}/performance`)}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
@@ -105,9 +106,9 @@ export default function ClassroomDetailPage() {
           </div>
         </div>
 
-        <Card className="mb-4">
+        <Card className="mb-4 border-0 shadow-md bg-white dark:bg-zinc-900">
           <CardHeader>
-            <CardTitle>Details</CardTitle>
+            <CardTitle className="text-lg font-semibold">Details</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-zinc-700">{classroom?.description || 'No description provided.'}</p>
@@ -119,11 +120,11 @@ export default function ClassroomDetailPage() {
         <StudentsSection classroomId={classroomId || ""} />
 
         <div className="grid md:grid-cols-2 gap-4">
-          <Card>
+          <Card className="border-0 shadow-md bg-white dark:bg-zinc-900">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Subjects</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Subjects</CardTitle>
                   <CardDescription>Manage subjects for this classroom</CardDescription>
                 </div>
                 <Button size="sm" onClick={() => setShowAddSubject(true)}>
@@ -183,9 +184,9 @@ export default function ClassroomDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-md bg-white dark:bg-zinc-900">
             <CardHeader>
-              <CardTitle>Exams</CardTitle>
+              <CardTitle className="text-lg font-semibold">Exams</CardTitle>
               <CardDescription>Coming next</CardDescription>
             </CardHeader>
             <CardContent>

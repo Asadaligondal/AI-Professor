@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, FileText, ArrowRight } from "lucide-react";
+import { Loader2, FileText, ArrowRight, ClipboardCheck } from "lucide-react";
 import { examService } from "@/lib/api";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -90,9 +90,9 @@ export default function ReviewIndexPage() {
         {reviewable.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {reviewable.map((exam: any) => (
-              <Card key={exam.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/exams/${exam.id}/review`)}>
+              <Card key={exam.id} className="border-0 shadow-md bg-white dark:bg-zinc-900 hover:shadow-lg transition-all cursor-pointer group" onClick={() => router.push(`/dashboard/exams/${exam.id}/review`)}>
                 <CardHeader>
-                  <CardTitle className="line-clamp-2">{exam.title}</CardTitle>
+                  <CardTitle className="line-clamp-2 text-zinc-900 dark:text-zinc-50">{exam.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
@@ -127,12 +127,14 @@ export default function ReviewIndexPage() {
             ))}
           </div>
         ) : (
-          <Card className="max-w-2xl mx-auto">
+          <Card className="max-w-2xl mx-auto border-0 shadow-md bg-white dark:bg-zinc-900">
             <CardContent className="py-12 text-center">
-              <FileText className="h-16 w-16 text-zinc-400 mx-auto mb-4" />
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
+                <ClipboardCheck className="h-8 w-8 text-amber-500" />
+              </div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">No exams in review right now</h2>
-              <p className="text-zinc-600 dark:text-zinc-400 mb-6">There are no exams currently marked as in-progress or needing review. You can go to Results to see all exams and their grading status.</p>
-              <Button onClick={() => router.push('/dashboard/results')}>Go to Results <ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <p className="text-zinc-500 mb-6">There are no exams currently marked as in-progress or needing review. You can go to Results to see all exams and their grading status.</p>
+              <Button onClick={() => router.push('/dashboard/results')} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">Go to Results <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </CardContent>
           </Card>
         )}
